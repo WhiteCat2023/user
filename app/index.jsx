@@ -1,10 +1,10 @@
 import { GoogleSignUpButton } from "@/components/ui/button/googleAuthButtons";
+import { FacebookSignInButton } from "@/components/ui/button/facebookAuthButton";
 import Input from "@/components/ui/input/Input";
 import { useFonts } from "expo-font";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  Image,
   StyleSheet,
   Text,
   View,
@@ -14,6 +14,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 // Gluestack UI components
 import { Button, ButtonText } from "@/components/ui/button";
 import { Pressable } from "@/components/ui/pressable";
+import { useAuth } from "../context/AuthContext";
+import { ActivityIndicator } from "react-native";
 
 export const options = {
   headerShown: false,
@@ -22,7 +24,9 @@ export const options = {
 export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [credentials, setCredentials] = useState({ email: "", password: "" });
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { login } = useAuth();
 
   const [fontsLoaded] = useFonts({
     Pacifico: require("../assets/fonts/Pacifico-Regular.ttf"),
@@ -33,6 +37,17 @@ export default function LoginScreen() {
 
   const handleChange = (field, value) => {
     setCredentials((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleLogin = async () => {
+    setLoading(true);
+    try {
+      await login({ email: credentials.email, password: credentials.password });
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -57,21 +72,18 @@ export default function LoginScreen() {
         </Pressable>
 
         <Pressable style={styles.socialButton}>
-          <Image
-            source={require("../assets/images/facebook.png")}
-            style={{ width: 25, height: 25 }}
-            resizeMode="contain"
-          />
+          <FacebookSignInButton />
         </Pressable>
       </View>
 
-      {/* Username */}
+      {/* Email */}
       <Input
-        placeholder="Username"
+        placeholder="Email"
         value={credentials.email}
-        onChangeText={(text) => handleChange("username", text)}
+        onChangeText={(text) => handleChange("email", text)}
         leftIconName="user"
         className="w-full mb-4 border border-green-500 rounded-lg"
+        editable={!loading}
       />
 
       {/* Password */}
@@ -84,6 +96,7 @@ export default function LoginScreen() {
         icon={showPassword ? "eye-off" : "eye"}
         onIconPress={() => setShowPassword(!showPassword)}
         className="w-full mb-3 border border-green-500 rounded-lg"
+        editable={!loading}
       />
 
       {/* Forgot password */}
@@ -99,9 +112,14 @@ export default function LoginScreen() {
         size="lg"
         className="w-full h-12 mb-7 rounded-lg"
         style={{ backgroundColor: "#22c55e" }}
-        onPress={() => console.log("Login pressed")}
+        onPress={handleLogin}
+        disabled={loading}
       >
-        <ButtonText className="text-white font-bold">Login</ButtonText>
+        {loading ? (
+          <ActivityIndicator color="white" />
+        ) : (
+          <ButtonText className="text-white font-bold">Login</ButtonText>
+        )}
       </Button>
 
       {/* Divider */}

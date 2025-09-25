@@ -11,14 +11,13 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
-  SafeAreaView,
   Text,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  const [loading, setLoading] = useState(true);
   const [session, setSession] = useState(false);
   const [user, setUser] = useState({});
   const [userDoc, setUserDoc] = useState({});
@@ -38,9 +37,7 @@ export function AuthProvider({ children }) {
 
       if (currentUser) {
         getUserDoc(currentUser.uid, setUserDoc);
-        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -51,8 +48,6 @@ export function AuthProvider({ children }) {
   }, [userDoc]);
 
   useEffect(() => {
-    if (loading) return;
-
     const currentPath = pathname;
 
     // Only redirect if not already on the correct page
@@ -65,40 +60,37 @@ export function AuthProvider({ children }) {
       router.replace("/admin/(tabs)");
       return;
     }
-    if (session && role === Role.USER && !currentPath.startsWith("/user")) {
-      router.replace("/user/(tabs)");
+    if (session && role === Role.USER && !currentPath.startsWith("/(tabs)")) {
+      router.replace("/(tabs)");
       return;
     }
     if (!session && !pathCollection.includes(currentPath)) {
       router.replace("/");
       return;
     }
-  }, [session, loading, pathname, role]);
+  }, [session, pathname, role]);
 
   const login = async (req) => {
-    setLoading(true);
     const res = await signIn(req);
     console.log(userDoc);
     if (res.status === HttpStatus.OK) {
       console.log("Login successful");
-      console.log(user.data.displayName);
-      console.log(user.data.uid);
+      console.log(res.data.displayName);
+      console.log(res.data.uid);
     } else {
       Alert.alert("Login Failed", res.message);
     }
-    setLoading(false);
   };
 
   const register = async (req) => {
-    setLoading(true);
     const res = await signUp(req);
 
     if (res.status === HttpStatus.OK) {
+      const { email, password } = req;
       await login({ email, password });
     } else {
       Alert.alert("Signup Failed", res.message);
     }
-    setLoading(false);
   };
 
   const logout = async () => {
@@ -115,16 +107,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={contextData}>
-      {loading ? (
-        <SafeAreaView
-          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-        >
-          <ActivityIndicator size="large" />
-          <Text>Loading...</Text>
-        </SafeAreaView>
-      ) : (
-        children
-      )}
+      {children}
     </AuthContext.Provider>
   );
 }

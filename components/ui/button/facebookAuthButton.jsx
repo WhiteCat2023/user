@@ -1,8 +1,13 @@
+import { checkUserIfExist } from "@/api/controller/auth.controller";
+import { newUserDoc, signInWithToken } from "@/api/services/firebase/auth.sevices";
+import { Role } from "@/enums/roles";
 import * as Facebook from "expo-auth-session/providers/facebook";
 import * as WebBrowser from "expo-web-browser";
 import { FacebookAuthProvider } from "firebase/auth";
 import { useEffect } from "react";
-import { Alert, Image, Pressable } from "react-native";
+import { Alert } from "react-native";
+import { Image } from "@/components/ui/image";
+import { Pressable } from "@/components/ui/pressable";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -40,7 +45,7 @@ export const FacebookSignInButton = () => {
         <Pressable
             disabled={!request}
             onPress={() => promptAsync()}
-            className="w-12 h-12 rounded-lg bg-white justify-center items-center shadow-md">
+            className="w-12 h-12 rounded-lg bg-white justify-center items-center shadow-md p-1">
             <Image
                 source={require("@/assets/images/facebook.png")}
                 style={{ width: 24, height: 24 }}

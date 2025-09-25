@@ -5,7 +5,9 @@ import * as AuthSession from "expo-auth-session";
 import * as Google from "expo-auth-session/providers/google";
 import { GoogleAuthProvider } from "firebase/auth";
 import { useEffect } from "react";
-import { Alert, Image, Pressable } from "react-native";
+import { Alert } from "react-native";
+import { Image } from "@/components/ui/image";
+import { Pressable } from "@/components/ui/pressable";
 
 // Still need to fix redirectUri when using Expo Go
 
@@ -58,7 +60,7 @@ export function GoogleSignUpButton() {
     <Pressable
       disabled={!request}
       onPress={() => promptAsync()}
-      className="w-12 h-12 rounded-lg bg-white justify-center items-center shadow-sm">
+      className="w-12 h-12 rounded-lg bg-white justify-center items-center shadow-sm p-2">
       <Image 
         source={require("@/assets/images/google.png")} 
         style={{ width: 24, height: 24 }}
