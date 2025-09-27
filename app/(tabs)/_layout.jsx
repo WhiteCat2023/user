@@ -1,15 +1,49 @@
 import { Tabs } from "expo-router";
-import ProtectedRoute from "../../utils/ProtectedRoute/ProtectedRoute";
+import { Home, FileText, Bell, User, Bot } from "lucide-react-native";
 
 export default function TabLayout() {
   return (
-    <ProtectedRoute>
-      <Tabs>
-        <Tabs.Screen name="index" options={{ title: "Dashboard" }} />
-        <Tabs.Screen name="reports" options={{ title: "Reports" }} />
-        <Tabs.Screen name="notifications" options={{ title: "Notifications" }} />
-        <Tabs.Screen name="profile" options={{ title: "Profile" }} />
-      </Tabs>
-    </ProtectedRoute>
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: 'green',
+        tabBarInactiveTintColor: 'gray',
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: "Dashboard",
+          tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="reports"
+        options={{
+          title: "Reports",
+          tabBarIcon: ({ color, size }) => <FileText color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="ai"
+        options={{
+          title: "Nico",
+          tabBarIcon: ({ color, size }) => <Bot color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          title: "Notifications",
+          tabBarIcon: ({ color, size }) => <Bell color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
+        }}
+      />
+    </Tabs>
   );
 }

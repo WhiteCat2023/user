@@ -28,8 +28,6 @@ export function AuthProvider({ children }) {
 
   const pathCollection = ["/", "/signup", "/forgot-password"];
 
-  const isWeb = Platform.OS === "web";
-
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -51,16 +49,7 @@ export function AuthProvider({ children }) {
     const currentPath = pathname;
 
     // Only redirect if not already on the correct page
-    if (
-      session &&
-      role === Role.ADMIN &&
-      !currentPath.startsWith("/admin") &&
-      isWeb
-    ) {
-      router.replace("/admin/(tabs)");
-      return;
-    }
-    if (session && role === Role.USER && !currentPath.startsWith("/(tabs)")) {
+    if (session && !currentPath.startsWith("/(tabs)")) {
       router.replace("/(tabs)");
       return;
     }
@@ -68,7 +57,7 @@ export function AuthProvider({ children }) {
       router.replace("/");
       return;
     }
-  }, [session, pathname, role]);
+  }, [session, pathname]);
 
   const login = async (req) => {
     const res = await signIn(req);
