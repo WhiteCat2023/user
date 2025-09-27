@@ -1,32 +1,26 @@
 import { auth } from "@/api/config/firebase.config";
-import { signIn, signOut } from "@/api/controller/auth.controller";
-import { getUserInfoFromFirestore } from "@/api/controller/users.controller";
+import { signIn, signOut, signUp } from "@/api/controller/auth.controller";
 import { getUserDoc } from "@/api/services/firebase/users.services";
 import { Role } from "@/enums/roles";
 import { HttpStatus } from "@/enums/status";
 import { usePathname, useRouter } from "expo-router";
 import { onAuthStateChanged } from "firebase/auth";
-import { createContext, useContext, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Platform,
-  Text,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { Alert } from "react-native";
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(false);
-  const [user, setUser] = useState({});
+  const [user, setUser] = useState(null);
   const [userDoc, setUserDoc] = useState({});
   const [role, setRole] = useState(null);
 
   const router = useRouter();
   const pathname = usePathname();
 
-  const pathCollection = ["/", "/signup", "/forgot-password"];
+  const authPaths = ["/", "/signup", "/forgot-password", "/reset-password"];
+  const hasRedirected = useRef(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -35,6 +29,9 @@ export function AuthProvider({ children }) {
 
       if (currentUser) {
         getUserDoc(currentUser.uid, setUserDoc);
+      } else {
+        setUserDoc({});
+        setRole(null);
       }
     });
 
@@ -48,24 +45,24 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const currentPath = pathname;
 
-    // Only redirect if not already on the correct page
-    if (session && !currentPath.startsWith("/(tabs)")) {
-      router.replace("/(tabs)");
-      return;
+    if (session) {
+      if (!hasRedirected.current && authPaths.includes(currentPath)) {
+        router.replace("/(tabs)");
+        hasRedirected.current = true;
+      }
+    } else {
+      hasRedirected.current = false;
+      if (!authPaths.includes(currentPath)) {
+        router.replace("/");
+      }
     }
-    if (!session && !pathCollection.includes(currentPath)) {
-      router.replace("/");
-      return;
-    }
-  }, [session, pathname]);
+  }, [session]);
 
   const login = async (req) => {
     const res = await signIn(req);
-    console.log(userDoc);
     if (res.status === HttpStatus.OK) {
-      console.log("Login successful");
-      console.log(res.data.displayName);
-      console.log(res.data.uid);
+      // Login successful
+      router.replace("/(tabs)");
     } else {
       Alert.alert("Login Failed", res.message);
     }
@@ -87,6 +84,8 @@ export function AuthProvider({ children }) {
     if (res.status === HttpStatus.OK) {
       setUser(null);
       setSession(false);
+      setUserDoc({});
+      setRole(null);
     } else {
       Alert.alert("Logout Failed", res.message);
     }
