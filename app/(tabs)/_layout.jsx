@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Home, FileText, Bell, User, Bot } from "lucide-react-native";
+import { Bell, Bot, FileText, Home, User } from "lucide-react-native";
 
 export default function TabLayout() {
   return (
@@ -10,9 +10,10 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="(home)"
         options={{
           title: "Dashboard",
+          headerShown: false,
           tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
         }}
       />
@@ -24,16 +25,18 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="ai"
+        name="(ai)"
         options={{
           title: "Nico",
+          headerShown: false,
           tabBarIcon: ({ color, size }) => <Bot color={color} size={size} />,
         }}
       />
       <Tabs.Screen
-        name="notifications"
+        name="(notifications)"
         options={{
           title: "Notifications",
+          headerShown: false,
           tabBarIcon: ({ color, size }) => <Bell color={color} size={size} />,
         }}
       />
