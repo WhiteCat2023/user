@@ -1,6 +1,8 @@
+import { useAuth } from "@/context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
 import {
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -17,8 +19,11 @@ export default function AIChatbot() {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false); // manual toggle
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const scrollViewRef = useRef(null);
+
+  // inside AIChatbot
+const { user } = useAuth(); // Add this at the top of the component
 
   useEffect(() => {
     if (scrollViewRef.current) {
@@ -77,7 +82,7 @@ export default function AIChatbot() {
     headerBg: isDarkMode ? "#121212" : "#fff",
     headerText: isDarkMode ? "#A0FFA0" : "#347a42",
     userMsg: isDarkMode ? "#286738" : "#b7e0b3",
-    botMsg: isDarkMode ? "#333" : "#e0f1df",
+    botMsg: isDarkMode ? "#333" : "#FFFFFF",
     inputBg: isDarkMode ? "#222" : "#fff",
     inputText: isDarkMode ? "#fff" : "#000",
     sendIcon: isDarkMode ? "#80FF80" : "#347a42",
@@ -85,7 +90,6 @@ export default function AIChatbot() {
     placeholder: isDarkMode ? "#888" : "#666",
   };
 
-  // Toggle function
   const toggleTheme = () => setIsDarkMode((prev) => !prev);
 
   return (
@@ -114,24 +118,60 @@ export default function AIChatbot() {
           }
         }}
       >
-        {messages.map((msg, idx) => (
-          <View
-            key={idx}
-            style={[
-              styles.message,
-              { backgroundColor: msg.sender === "user" ? themeColors.userMsg : themeColors.botMsg },
-              msg.sender === "user" ? styles.userMsg : styles.botMsg,
-            ]}
-          >
-            {msg.text === "..." && msg.sender === "bot" ? (
-              <TypingIndicator typingDotColor={themeColors.typingDot} />
-            ) : (
-              <Text style={{ color: msg.sender === "user" ? themeColors.inputText : themeColors.inputText }}>
-                {msg.text}
-              </Text>
-            )}
-          </View>
-        ))}
+       {messages.map((msg, idx) => (
+  <View
+    key={idx}
+    style={[
+      styles.messageRow,
+      msg.sender === "user"
+        ? { justifyContent: "flex-end" }
+        : { justifyContent: "flex-start" },
+    ]}
+  >
+    {/* Message bubble first for user, then profile pic */}
+    {msg.sender === "user" && (
+      <View
+        style={[
+          styles.message,
+          { backgroundColor: themeColors.userMsg },
+        ]}
+      >
+        <Text style={{ color: themeColors.inputText }}>{msg.text}</Text>
+      </View>
+    )}
+
+    {msg.sender === "bot" && (
+      <>
+        {/* Bot profile pic */}
+        <Image
+          source={require("@/assets/images/ariba-logo.png")}
+          style={styles.profilePic}
+        />
+        {/* Bot message bubble */}
+        <View
+          style={[
+            styles.message,
+            { backgroundColor: themeColors.botMsg },
+          ]}
+        >
+          {msg.text === "..." ? (
+            <TypingIndicator typingDotColor={themeColors.typingDot} />
+          ) : (
+            <Text style={{ color: themeColors.inputText }}>{msg.text}</Text>
+          )}
+        </View>
+      </>
+    )}
+
+    {/* User profile pic at the right */}
+    {msg.sender === "user" && (
+      <Image
+        source={{ uri: user?.photoURL || "https://i.pravatar.cc/100" }}
+        style={styles.profilePic}
+      />
+    )}
+  </View>
+))}
       </ScrollView>
 
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
@@ -173,13 +213,13 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 18, fontWeight: "600", marginLeft: 8 },
   chatArea: { padding: 12 },
-  message: { padding: 12, borderRadius: 20, marginVertical: 4, maxWidth: "80%" },
-  userMsg: { alignSelf: "flex-end" },
-  botMsg: { alignSelf: "flex-start" },
+  messageRow: { flexDirection: "row", alignItems: "flex-end", marginVertical: 4 },
+  profilePic: { width: 36, height: 36, borderRadius: 18, marginHorizontal: 6 },
+  message: { padding: 12, borderRadius: 20, maxWidth: "75%" },
   inputArea: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 25,
+    borderRadius: 15,
     paddingHorizontal: 12,
     paddingVertical: 6,
     margin: 12,
@@ -190,4 +230,3 @@ const styles = StyleSheet.create({
   typingContainer: { flexDirection: "row", alignItems: "center", padding: 4 },
   typingDot: { fontSize: 18, marginHorizontal: 2 },
 });
-
