@@ -215,18 +215,24 @@ const Notifications = () => {
   </RNText>
 </View>
 
-        <RNText className="text-sm text-gray-600 mt-2">
-          {item.description
-            ? item.description.slice(0, 60) +
-              (item.description.length > 60 ? "..." : "")
-            : "No description"}
-        </RNText>
+        {/* Description (1 line max + "Click to see more...") */}
+<RNText
+  className="text-sm text-gray-600 mt-2"
+  numberOfLines={1}
+  ellipsizeMode="tail"
+>
+  {item.description || "No description"}
+</RNText>
+
+{item.description && item.description.length > 60 && (
+  <RNText className="text-sm text-gray-400">Click to see more...</RNText>
+)}
       </View>
 
       {/* Right: Tier + Status (inside card, no overlap) */}
       <View className="items-end justify-between">
         <RNText
-  className="mt-1 text-lg font-semibold"
+  className=" text-lg font-semibold"
   style={{
     color:
       item.tier?.toLowerCase() === "low"
@@ -243,7 +249,7 @@ const Notifications = () => {
   {(item.tier || "N/A").toUpperCase()}
 </RNText>
         <RNText
-  className="mt-12 text-lg font-bold"
+  className="mt-10 text-lg font-bold"
   style={{
     color:
       item.status?.toLowerCase() === "responded"
