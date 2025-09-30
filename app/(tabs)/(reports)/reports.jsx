@@ -175,120 +175,137 @@ export default function Reports() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 5 }}
-        renderItem={({ item }) => (
-          <View className="bg-white rounded-xl p-4 mb-2 shadow">
-            <View className="flex-row justify-between items-start">
-              {/* Left Side */}
-              <View style={{ flex: 1, paddingRight: 8 }}>
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-  <RNText
-    className="text-xl font-bold text-black mr-1"
-    numberOfLines={1}
-    ellipsizeMode="tail"
-    style={{ flexShrink: 1 }}
-  >
-    {item.title || "Untitled"}
-  </RNText>
+        renderItem={({ item }) => {
+          const isPending = item.status?.toLowerCase() === "pending";
+          return (
+            <View className="bg-white rounded-xl p-4 mb-2 shadow">
+              <View className="flex-row justify-between items-start">
+                {/* Left Side */}
+                <View style={{ flex: 1, paddingRight: 8 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <RNText
+                      className="text-xl font-bold text-black mr-1"
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                      style={{ flexShrink: 1 }}
+                    >
+                      {item.title || "Untitled"}
+                    </RNText>
 
-  {/* Tier Color Mapping */}
-  <RNText
-    className="text-lg font-bold"
-    style={{
-      color:
-        item.tier?.toLowerCase() === "low"
-          ? "#16A34A" // Green
-          : item.tier?.toLowerCase() === "medium"
-          ? "#EAB308" // Yellow
-          : item.tier?.toLowerCase() === "high"
-          ? "#F97316" // Orange
-          : item.tier?.toLowerCase() === "emergency"
-          ? "#DC2626" // Red
-          : "#6B7280", // Default Gray if undefined
-    }}
-  >
-    • {item.tier || "N/A"}
-  </RNText>
-</View>
-                <RNText className="text-xs text-gray-500">
-                  {formatDate(item.timestamp)}
-                </RNText>
-                <RNText
-  className="text-sm text-black mt-2"
-  numberOfLines={2}
-  ellipsizeMode="tail"
->
-  {item.description || "No description"}
-</RNText>
+                    {/* Tier Color Mapping */}
+                    <RNText
+                      className="text-lg font-bold"
+                      style={{
+                        color:
+                          item.tier?.toLowerCase() === "low"
+                            ? "#16A34A" // Green
+                            : item.tier?.toLowerCase() === "medium"
+                            ? "#EAB308" // Yellow
+                            : item.tier?.toLowerCase() === "high"
+                            ? "#F97316" // Orange
+                            : item.tier?.toLowerCase() === "emergency"
+                            ? "#DC2626" // Red
+                            : "#6B7280", // Default Gray if undefined
+                      }}
+                    >
+                      • {item.tier || "N/A"}
+                    </RNText>
+                  </View>
+                  <RNText className="text-xs text-gray-500">
+                    {formatDate(item.timestamp)}
+                  </RNText>
+                  <RNText
+                    className="text-sm text-black mt-2"
+                    numberOfLines={2}
+                    ellipsizeMode="tail"
+                  >
+                    {item.description || "No description"}
+                  </RNText>
 
-{/* Show "Click to see more..." if description length is long */}
-{item.description && item.description.length > 80 && (
-  <TouchableOpacity
-    onPress={() => router.push(`/(tabs)/(reports)/${item.id}`)}
-  >
-    <RNText className=" text-gray-500 text-sm">
-      Click to see more...
-    </RNText>
-  </TouchableOpacity>
-)}
+                  {/* Show "Click to see more..." if description length is long */}
+                  {item.description && item.description.length > 80 && (
+                    <TouchableOpacity
+                      onPress={() =>
+                        router.push(`/(tabs)/(reports)/${item.id}`)
+                      }
+                    >
+                      <RNText className=" text-gray-500 text-sm">
+                        Click to see more...
+                      </RNText>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {/* Right Side */}
+                <View
+                  className={`items-center ${!isPending ? "justify-center" : ""}`}
+                >
+                  {/* Conditionally render buttons if status is pending */}
+                  {isPending && (
+                    <View className="flex-row mb-2 self-end">
+                      <TouchableOpacity
+                        onPress={() =>
+                          router.push(`/(tabs)/(reports)/edit/${item.id}`)
+                        }
+                        className="w-7 h-7 mr-2 items-center justify-center rounded-md bg-green-500"
+                      >
+                        <Edit3 size={16} color="#fff" />
+                      </TouchableOpacity>
+                      <TouchableOpacity className="w-7 h-7 items-center justify-center rounded-md bg-red-500">
+                        <Trash2 size={16} color="#fff" />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+
+                  {/* Image */}
+                  {item.images && item.images.length > 0 ? (
+                    <Image
+                      source={{ uri: item.images[0] }}
+                      style={{
+                        width: isPending ? 130 : 140,
+                        height: isPending ? 100 : 130,
+                        borderRadius: 8,
+                        marginBottom: isPending ? 8 : 0,
+                      }}
+                    />
+                  ) : (
+                    <View
+                      style={{
+                        width: 90,
+                        height: 70,
+                        borderRadius: 8,
+                        borderWidth: 1,
+                        borderColor: "#ccc",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <RNText className="text-xs text-gray-400">
+                        No Image
+                      </RNText>
+                    </View>
+                  )}
+                </View>
               </View>
 
-              {/* Right Side */}
-<View className="items-center">
-  {/* Buttons at the top */}
-  <View className="flex-row mb-2 self-end">
-    <TouchableOpacity className="w-7 h-7 mr-2 items-center justify-center rounded-md bg-green-500">
-      <Edit3 size={16} color="#fff" />
-    </TouchableOpacity>
-    <TouchableOpacity className="w-7 h-7 items-center justify-center rounded-md bg-red-500">
-      <Trash2 size={16} color="#fff" />
-    </TouchableOpacity>
-  </View>
-
-  {/* Image below */}
-  {item.images && item.images.length > 0 ? (
-    <Image
-      source={{ uri: item.images[0] }}
-      style={{
-        width: 130,
-        height: 100,
-        borderRadius: 8,
-        marginBottom: 8,
-      }}
-    />
-  ) : (
-    <View
-      style={{
-        width: 90,
-        height: 70,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: "#ccc",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <RNText className="text-xs text-gray-400">No Image</RNText>
-    </View>
-  )}
-</View>
+              {/* Status */}
+              <RNText
+                className="text-2xl font-bold"
+                style={{
+                  marginTop: isPending ? -34 : -24,
+                  color:
+                    item.status?.toLowerCase() === "responded"
+                      ? "#16A34A"
+                      : item.status?.toLowerCase() === "ignored"
+                      ? "#DC2626"
+                      : "#EAB308",
+                }}
+              >
+                {item.status?.toUpperCase() || "N/A"}
+              </RNText>
             </View>
-
-            {/* Status */}
-            <RNText
-              className="-mt-9 text-2xl font-bold"
-              style={{
-                color:
-                  item.status?.toLowerCase() === "responded"
-                    ? "#16A34A"
-                    : item.status?.toLowerCase() === "ignored"
-                    ? "#DC2626"
-                    : "#374151",
-              }}
-            >
-              {item.status?.toUpperCase() || "N/A"}
-            </RNText>
-          </View>
-        )}
+          );
+        }}
         ListEmptyComponent={
           <View className="items-center mt-12">
             <RNText>No reports found</RNText>

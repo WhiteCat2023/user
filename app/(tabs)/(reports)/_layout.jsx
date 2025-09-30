@@ -5,6 +5,7 @@ export default function ReportsLayout() {
     <Stack>
         <Stack.Screen name="reports" options={{ title: "Reports", headerShown: false }} />
         <Stack.Screen name="[id]" options={{ title: "Report Details", headerShown: false }} />
+        <Stack.Screen name="edit/[id]" options={{ title: "Edit Report", headerShown: false }} />
     </Stack>
   );
 }

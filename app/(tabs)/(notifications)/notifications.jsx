@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -21,6 +22,7 @@ import { useAuth } from "@/context/AuthContext";
 import { format } from "date-fns";
 
 const Notifications = () => {
+  const router = useRouter();
   const { user } = useAuth();
 
   const [notifications, setNotifications] = useState([]);
@@ -216,17 +218,24 @@ const Notifications = () => {
 </View>
 
         {/* Description (1 line max + "Click to see more...") */}
-<RNText
-  className="text-sm text-gray-600 mt-2"
-  numberOfLines={1}
-  ellipsizeMode="tail"
->
-  {item.description || "No description"}
-</RNText>
+        <TouchableOpacity
+          onPress={() => router.push(`(tabs)/(reports)/${item.id}`)}
+          activeOpacity={0.7}
+        >
+          <RNText
+            className="text-sm text-gray-600 mt-2"
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {item.description || "No description"}
+          </RNText>
 
-{item.description && item.description.length > 60 && (
-  <RNText className="text-sm text-gray-400">Click to see more...</RNText>
-)}
+          {item.description && item.description.length > 60 && (
+            <RNText className="text-sm text-gray-400">
+              Click to see more...
+            </RNText>
+          )}
+        </TouchableOpacity>
       </View>
 
       {/* Right: Tier + Status (inside card, no overlap) */}

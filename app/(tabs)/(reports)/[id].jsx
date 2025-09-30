@@ -2,16 +2,18 @@ import { db } from "@/api/config/firebase.config";
 import { Box } from "@/components/ui/box";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { doc, getDoc } from "firebase/firestore";
-import { ChevronLeft, Info } from "lucide-react-native";
+import { ChevronLeft, Info, X } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  Modal,
   Text as RNText,
   SafeAreaView,
   ScrollView,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from "react-native";
 
 export default function ReportDetails() {
@@ -19,6 +21,19 @@ export default function ReportDetails() {
   const router = useRouter();
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+
+  const openImageModal = (uri) => {
+    setSelectedImage(uri);
+    setModalVisible(true);
+  };
+
+  const closeImageModal = () => {
+    setModalVisible(false);
+    setSelectedImage(null);
+  };
 
   useEffect(() => {
     if (id) {
@@ -137,11 +152,15 @@ export default function ReportDetails() {
             <View className="flex-row flex-wrap">
               {report.images && report.images.length > 0 ? (
                 report.images.map((uri, index) => (
-                  <Image
+                  <TouchableOpacity
                     key={index}
-                    source={{ uri }}
-                    className="w-24 h-24 rounded-md mr-2 mb-2 bg-gray-200"
-                  />
+                    onPress={() => openImageModal(uri)}
+                  >
+                    <Image
+                      source={{ uri }}
+                      className="w-24 h-24 rounded-md mr-2 mb-2 bg-gray-200"
+                    />
+                  </TouchableOpacity>
                 ))
               ) : (
                 <RNText className="text-gray-500">No files attached.</RNText>
@@ -150,6 +169,35 @@ export default function ReportDetails() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Image Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={closeImageModal}
+      >
+        <View
+          className="flex-1 justify-center items-center"
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.85)" }}
+        >
+          <TouchableOpacity
+            className="absolute top-10 right-5 z-10"
+            onPress={closeImageModal}
+          >
+            <X size={32} color="white" />
+          </TouchableOpacity>
+
+          <Image
+            source={{ uri: selectedImage }}
+            style={{
+              width: windowWidth * 0.9,
+              height: windowHeight * 0.8,
+            }}
+            resizeMode="contain"
+          />
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
