@@ -97,7 +97,7 @@ export default function ReportDetails() {
             className="flex-row items-center mb-4"
           >
             <ChevronLeft size={24} color="black" />
-            <RNText className="text-lg font-bold ml-1">BACK</RNText>
+            <RNText className="text-sm font-bold ml-1">BACK</RNText>
           </TouchableOpacity>
 
           {/* Report Title */}
@@ -139,7 +139,7 @@ export default function ReportDetails() {
               How urgent is the report?
             </RNText>
             <View className="flex-row items-center">
-              <View className="flex-1 border border-gray-300 rounded-md p-3 bg-gray-50">
+              <View className="flex-1 border border-gray-300 rounded-md p-3 bg-gray-50 mr-3">
                 <RNText className="text-base">{report.tier}</RNText>
               </View>
               <Info size={24} color="gray" className="ml-2" />

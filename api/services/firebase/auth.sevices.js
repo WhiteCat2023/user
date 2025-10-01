@@ -1,7 +1,7 @@
 // working on this
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail, signInWithCredential} from "firebase/auth";
+import { createUserWithEmailAndPassword, sendPasswordResetEmail, signInWithCredential, signInWithEmailAndPassword, signOut, updatePassword } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from "../../config/firebase.config";
-import { setDoc,doc } from "firebase/firestore";
 
 export async function signInUser(email, password){
    return await signInWithEmailAndPassword(auth, email, password);
@@ -57,6 +57,14 @@ export async function newUserDoc(userCredentials, role, extra) {
     console.error(`Firestore Error: ${error.message}`);
     throw error;
   }
+}
+
+export async function changePassword(newPassword) {
+  const user = auth.currentUser;
+  if (user) {
+    return await updatePassword(user, newPassword);
+  }
+  throw new Error("No user is signed in.");
 }
 
 

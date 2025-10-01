@@ -1,8 +1,10 @@
 import { db } from "@/api/config/firebase.config";
+import { deleteImageFromFirebase, uploadImagesToFirebase } from "@/api/services/firebase/storage.services";
 import SearchBar from "@/components/inputs/searchbar/SearchBar";
 import { Box } from "@/components/ui/box";
 import { Button, ButtonText } from "@/components/ui/button";
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
+import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import {
@@ -46,6 +48,8 @@ export default function EditReport() {
   const [showTierModal, setShowTierModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
+  const [isDeleteMode, setIsDeleteMode] = useState(false);
+  const [selectedPhotosForDeletion, setSelectedPhotosForDeletion] = useState([]);
 
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
@@ -146,6 +150,77 @@ export default function EditReport() {
     }
   };
 
+  const handleDeletePhoto = async () => {
+    if (!isDeleteMode) {
+      setIsDeleteMode(true);
+      setSelectedImage(null); // Clear single selection when entering delete mode
+      return;
+    }
+
+    if (selectedPhotosForDeletion.length === 0) {
+      Alert.alert("No Photos Selected", "Please select photos to delete.", [
+        { text: "OK", onPress: () => setIsDeleteMode(false) },
+      ]);
+      return;
+    }
+
+    Alert.alert(
+      "Confirm Deletion",
+      `Are you sure you want to delete ${selectedPhotosForDeletion.length} photo(s)? This action cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel", onPress: () => {
+            setIsDeleteMode(false);
+            setSelectedPhotosForDeletion([]);
+        } },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setSaving(true);
+            try {
+              // Delete from Firebase Storage
+              for (const imageUrl of selectedPhotosForDeletion) {
+                await deleteImageFromFirebase(imageUrl);
+              }
+
+              // Update component state
+              const remainingImages = images.filter(
+                (img) => !selectedPhotosForDeletion.includes(img)
+              );
+              setImages(remainingImages);
+
+              // Update Firestore
+              const docRef = doc(db, "allReports", id);
+              await updateDoc(docRef, { images: remainingImages });
+
+              Alert.alert("Success", "Selected photos have been deleted.");
+            } catch (error) {
+              console.error("Error deleting photos: ", error);
+              Alert.alert(
+                "Error",
+                "Failed to delete photos. Please try again."
+              );
+            } finally {
+              setSaving(false);
+              setIsDeleteMode(false);
+              setSelectedPhotosForDeletion([]);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleSelectImageForDeletion = (imageUrl) => {
+    setSelectedPhotosForDeletion((prevSelected) => {
+      if (prevSelected.includes(imageUrl)) {
+        return prevSelected.filter((url) => url !== imageUrl);
+      } else {
+        return [...prevSelected, imageUrl];
+      }
+    });
+  };
+
   const handleDeleteDescription = () => {
     Alert.alert(
       "Delete Description",
@@ -187,6 +262,52 @@ export default function EditReport() {
       setTimeout(() => descriptionInputRef.current?.focus(), 100);
     }
     setIsEditingDescription(!isEditingDescription);
+  };
+
+  const handleAddPhoto = async () => {
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permissionResult.granted === false) {
+      Alert.alert(
+        "Permission Required",
+        "You need to allow access to your photos to add an image."
+      );
+      return;
+    }
+
+    const pickerResult = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (pickerResult.canceled) {
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { uri } = pickerResult.assets[0];
+      const newImageUrls = await uploadImagesToFirebase([{ uri }], `reports/${id}`);
+
+      if (newImageUrls && newImageUrls.length > 0) {
+        const updatedImages = [...images, ...newImageUrls];
+        setImages(updatedImages);
+
+        const docRef = doc(db, "allReports", id);
+        await updateDoc(docRef, { images: updatedImages });
+
+        Alert.alert("Success", "Photo added successfully!");
+      } else {
+        throw new Error("Image upload returned no URL.");
+      }
+    } catch (error) {
+      console.error("Error adding photo: ", error);
+      Alert.alert("Error", "Failed to add photo. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) {
@@ -383,33 +504,73 @@ export default function EditReport() {
           <View>
             <Text className="text-lg font-bold mb-2">Files Attached:</Text>
             <View className="flex-row flex-wrap">
-              {images.map((uri, index) => (
-                <TouchableOpacity key={index} onPress={() => setSelectedImage(uri)}>
+              {images.map((uri, index) => {
+                const isSelectedForDeletion = selectedPhotosForDeletion.includes(uri);
+                return (
+                <TouchableOpacity 
+                  key={index} 
+                  onPress={() => {
+                    if (isDeleteMode) {
+                      handleSelectImageForDeletion(uri);
+                    } else {
+                      setSelectedImage(uri);
+                    }
+                  }}
+                  className="mr-2 mb-2"
+                >
                   <Image
-                    key={index}
                     source={{ uri }}
-                    className="w-24 h-24 rounded-md mr-2 mb-2 bg-gray-200"
-                    style={{ borderWidth: selectedImage === uri ? 2 : 0, borderColor: '#16A34A' }}
+                    className="w-24 h-24 rounded-md bg-gray-200"
                   />
+                  {isDeleteMode && (
+                    <View 
+                      className="absolute inset-0 rounded-md justify-center items-center"
+                      style={{ 
+                        backgroundColor: isSelectedForDeletion ? 'rgba(0,0,0,0.5)' : 'transparent',
+                        borderWidth: 2,
+                        borderColor: isSelectedForDeletion ? '#16A34A' : 'transparent'
+                      }}
+                    >
+                      {isSelectedForDeletion && <Check size={32} color="white" />}
+                    </View>
+                  )}
                 </TouchableOpacity>
-              ))}
+              )})}
             </View>
             <View className="flex-row mt-4">
               <TouchableOpacity
-                // onPress={handleAddPhoto}
+                onPress={handleAddPhoto}
                 className="flex-row items-center bg-green-600 p-2 rounded-lg mr-2"
+                disabled={isDeleteMode || saving}
               >
                 <Link size={16} color="white" />
                 <Text className="text-white ml-1 font-semibold">Add Photo</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                // onPress={handleDeletePhoto}
-                disabled={!selectedImage}
-                className="flex-row items-center bg-red-500 p-2 rounded-lg"
+                onPress={handleDeletePhoto}
+                disabled={saving}
+                className={`flex-row items-center p-2 rounded-lg ${
+                  isDeleteMode && selectedPhotosForDeletion.length > 0 ? 'bg-green-600' : 'bg-red-500'
+                }`}
               >
                 <Trash2 size={16} color="white" />
-                <Text className="text-white ml-1 font-semibold">Delete Photo</Text>
+                <Text className="text-white ml-1 font-semibold">
+                  {isDeleteMode 
+                    ? `Delete (${selectedPhotosForDeletion.length})`
+                    : "Delete Photo"}
+                </Text>
               </TouchableOpacity>
+              {isDeleteMode && (
+                <TouchableOpacity
+                  onPress={() => {
+                    setIsDeleteMode(false);
+                    setSelectedPhotosForDeletion([]);
+                  }}
+                  className="flex-row items-center bg-gray-500 p-2 rounded-lg ml-2"
+                >
+                  <Text className="text-white font-semibold">Cancel</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </View>
@@ -418,4 +579,3 @@ export default function EditReport() {
     </GluestackUIProvider>
   );
 }
-  

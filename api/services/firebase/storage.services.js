@@ -1,4 +1,4 @@
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import { deleteObject, getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { storage } from "../../config/firebase.config";
 
 export async function upload( req ) {
@@ -37,6 +37,20 @@ export const uploadImagesToFirebase = async (images, folderPath) => {
     return urls;
   } catch (error) {
     console.error("Error uploading images: ", error);
+    throw error;
+  }
+};
+
+export const deleteImageFromFirebase = async (imageUrl) => {
+  try {
+    const imageRef = ref(storage, imageUrl);
+    await deleteObject(imageRef);
+  } catch (error) {
+    if (error.code === 'storage/object-not-found') {
+      console.log(`File not found, skipping deletion: ${imageUrl}`);
+      return;
+    }
+    console.error("Error deleting image: ", error);
     throw error;
   }
 };

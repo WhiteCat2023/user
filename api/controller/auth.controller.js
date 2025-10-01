@@ -1,4 +1,4 @@
-import { createUser, newUserDoc, setRole, signInUser, signOutUser, userForgotPassword } from "../services/firebase/auth.sevices";
+import { changePassword as changePasswordService, createUser, newUserDoc, signInUser, signOutUser, userForgotPassword } from "../services/firebase/auth.sevices";
 // import { HttpStatus }  from "../../enums/status";
 import { HttpStatus } from "@/enums/status";
 import { userDocRef } from "../services/firebase/users.services";
@@ -87,5 +87,21 @@ export const forgotPassword = async ( email ) => {
             message: error.message 
         };
     }
-}
+};
+
+export const changePassword = async ( newPassword ) => {
+    try {
+        await changePasswordService(newPassword);
+        return {
+            status: HttpStatus.OK,
+            message: "Password updated successfully",
+        };
+    } catch (error) {
+        console.error(`Change password Error: ${error.message}`);
+        return {
+            status: HttpStatus.BAD_REQUEST,
+            message: error.message,
+        };
+    }
+};
 
