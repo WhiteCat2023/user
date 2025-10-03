@@ -1,12 +1,14 @@
 import { db } from "@/api/config/firebase.config";
 import { changePassword } from "@/api/controller/auth.controller";
 import { uploadImagesToFirebase } from "@/api/services/firebase/storage.services";
+import { Icon } from "@/components/ui/icon";
 import { useAuth } from "@/context/AuthContext";
+import { useFonts } from "expo-font";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import { getAuth, updateProfile } from "firebase/auth";
+import { EmailAuthProvider, getAuth, reauthenticateWithCredential, updateProfile } from "firebase/auth";
 import { doc, updateDoc } from "firebase/firestore";
-import { LogOut, Pencil, Upload, X } from "lucide-react-native";
+import { Check, Eye, EyeOff, LogOut, Pencil, Upload, X } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -27,6 +29,9 @@ export default function Profile() {
   const { user, userDoc, logout } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showCoverPhotoSuccessModal, setShowCoverPhotoSuccessModal] = useState(false);
+  const [showProfilePhotoSuccessModal, setShowProfilePhotoSuccessModal] = useState(false);
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -34,6 +39,19 @@ export default function Profile() {
   const [isUploadingProfilePic, setIsUploadingProfilePic] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+
+  const [fontsLoaded] = useFonts({
+    Pacifico: require("../../../assets/fonts/Pacifico-Regular.ttf"),
+    SpaceMono: require("../../../assets/fonts/SpaceMono-Regular.ttf"),
+    Roboto: require("../../../assets/fonts/Roboto-Bold.ttf"),
+    Poppins: require("../../../assets/fonts/Poppins-Bold.ttf"),
+  });
+
+  if (!fontsLoaded) return null;
 
   useEffect(() => {
     if (userDoc) {
@@ -47,14 +65,25 @@ export default function Profile() {
       alert("New passwords do not match.");
       return;
     }
-    // We can't verify old password on the client side with firebase auth
-    // For now, we will just change the password
-    const res = await changePassword(newPassword);
-    if (res.status === 200) {
-      alert("Password changed successfully!");
-      setModalVisible(false);
-    } else {
-      alert(`Error: ${res.message}`);
+
+    const auth = getAuth();
+    const user = auth.currentUser;
+    const credential = EmailAuthProvider.credential(user.email, oldPassword);
+
+    try {
+      await reauthenticateWithCredential(user, credential);
+      const res = await changePassword(newPassword);
+      if (res.status === 200) {
+        setModalVisible(false);
+        setShowSuccessModal(true);
+        setOldPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      } else {
+        alert(`Error: ${res.message}`);
+      }
+    } catch (error) {
+      alert(`Error: ${error.message}`);
     }
   };
 
@@ -69,7 +98,7 @@ export default function Profile() {
         firstName: firstName,
         lastName: lastName,
       });
-      Alert.alert("Success", "Your information has been updated.");
+      
     } catch (error) {
       console.error("Error updating user information: ", error);
       Alert.alert("Error", "Failed to update information. Please try again.");
@@ -112,7 +141,7 @@ export default function Profile() {
         const coverPhotoURL = newImageUrls[0];
         const userRef = doc(db, "users", user.uid);
         await updateDoc(userRef, { coverPhotoURL });
-        Alert.alert("Success", "Cover photo updated successfully!");
+        setShowCoverPhotoSuccessModal(true);
       } else {
         throw new Error("Image upload returned no URL.");
       }
@@ -162,7 +191,7 @@ export default function Profile() {
         const userRef = doc(db, "users", user.uid);
         await updateDoc(userRef, { photoURL });
 
-        Alert.alert("Success", "Profile picture updated successfully!");
+        setShowProfilePhotoSuccessModal(true);
       } else {
         throw new Error("Image upload returned no URL.");
       }
@@ -181,18 +210,18 @@ export default function Profile() {
     <SafeAreaView className="flex-1 bg-[#F0FDF4]">
       <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
         {/* Header */}
-        <View className="bg-[#F0FDF4] px-4 pt-5 pb-3">
+        <View className="bg-[#F0FDF4] px-4 pt-3 pb-3">
           <View className="flex-row items-center">
             <Image
               source={require("@/assets/images/ariba-logo.png")}
-              style={{ width: 50, height: 50, marginRight: 8 }}
+              style={{ width: 80, height: 80, marginRight: 2 }}
               resizeMode="contain"
             />
             <View>
-              <Text className="text-2xl font-extrabold text-black">
+              <Text className="text-3xl font-[Poppins] text-black mt-5">
                 PROFILE
               </Text>
-              <Text className="text-sm text-gray-500">
+              <Text className="text-xs text-gray-500">
                 Manage Settings for your Profile
               </Text>
             </View>
@@ -382,24 +411,40 @@ export default function Profile() {
             <Text className="text-sm font-semibold mb-1">
               Confirm old Password
             </Text>
-            <TextInput
-              placeholder="Enter old password here"
-              secureTextEntry
-              value={oldPassword}
-              onChangeText={setOldPassword}
-              className="bg-gray-100 border border-gray-300 rounded-lg p-3 mb-4"
-            />
+            <View className="flex-row items-center bg-gray-100 border border-gray-300 rounded-lg mb-4">
+              <TextInput
+                placeholder="Enter old password here"
+                secureTextEntry={!showOldPassword}
+                value={oldPassword}
+                onChangeText={setOldPassword}
+                className="flex-1 p-3"
+              />
+              <TouchableOpacity
+                onPress={() => setShowOldPassword(!showOldPassword)}
+                className="p-3"
+              >
+                <Icon as={showOldPassword ? Eye : EyeOff} size="md" color="gray" />
+              </TouchableOpacity>
+            </View>
 
             <Text className="text-sm font-semibold mb-1">
               Create new password
             </Text>
-            <TextInput
-              placeholder="Enter new password here"
-              secureTextEntry
-              value={newPassword}
-              onChangeText={setNewPassword}
-              className="bg-gray-100 border border-gray-300 rounded-lg p-3"
-            />
+            <View className="flex-row items-center bg-gray-100 border border-gray-300 rounded-lg">
+              <TextInput
+                placeholder="Enter new password here"
+                secureTextEntry={!showNewPassword}
+                value={newPassword}
+                onChangeText={setNewPassword}
+                className="flex-1 p-3"
+              />
+              <TouchableOpacity
+                onPress={() => setShowNewPassword(!showNewPassword)}
+                className="p-3"
+              >
+                <Icon as={showNewPassword ? Eye : EyeOff} size="md" color="gray" />
+              </TouchableOpacity>
+            </View>
             <Text className="text-xs text-gray-500 mt-1 mb-4">
               Password must be in Alphanumeric 12 min character 1 Special
             </Text>
@@ -407,13 +452,21 @@ export default function Profile() {
             <Text className="text-sm font-semibold mb-1">
               Confirm new password
             </Text>
-            <TextInput
-              placeholder="Confirm new password"
-              secureTextEntry
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              className="bg-gray-100 border border-gray-300 rounded-lg p-3 mb-6"
-            />
+            <View className="flex-row items-center bg-gray-100 border border-gray-300 rounded-lg mb-6">
+              <TextInput
+                placeholder="Confirm new password"
+                secureTextEntry={!showConfirmPassword}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                className="flex-1 p-3"
+              />
+              <TouchableOpacity
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="p-3"
+              >
+                <Icon as={showConfirmPassword ? Eye : EyeOff} size="md" color="gray" />
+              </TouchableOpacity>
+            </View>
 
             <TouchableOpacity
               onPress={handlePasswordChange}
@@ -426,6 +479,131 @@ export default function Profile() {
             <Text className="text-xs text-gray-500 text-center mt-2">
               By clicking the change password we'll send email for confimation
             </Text>
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showSuccessModal}
+        onRequestClose={() => setShowSuccessModal(false)}
+      >
+        <View className="flex-1 justify-center items-center bg-black/50">
+          <View className="bg-white w-11/12 max-w-sm rounded-2xl p-6 items-center shadow-lg">
+            <TouchableOpacity
+              className="absolute top-4 right-4"
+              onPress={() => setShowSuccessModal(false)}
+            >
+              <X size={24} color="black" />
+            </TouchableOpacity>
+            
+            <Text className="text-4xl font-[Poppins] text-center my-6">
+              PASSWORD CHANGE
+            </Text>
+      
+            <View className="h-24 w-24 bg-green-500 items-center justify-center rounded-xl mb-6">
+              <Check size={80} color="white" strokeWidth={3} />
+            </View>
+      
+            <Text className="text-lg mb-6 text-center">
+              Password Change <Text className="font-bold text-green-600">Successful!</Text>
+            </Text>
+      
+            <TouchableOpacity
+              onPress={() => setShowSuccessModal(false)}
+              className="bg-green-500 w-full py-3 rounded-lg items-center"
+              style={{
+                shadowColor: "#16A34A",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.5,
+                shadowRadius: 10,
+                elevation: 10,
+              }}
+            >
+              <Text className="text-white font-bold text-lg">
+                Okay
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showCoverPhotoSuccessModal}
+        onRequestClose={() => setShowCoverPhotoSuccessModal(false)}
+      >
+        <View className="flex-1 justify-center items-center bg-black/50">
+          <View className="bg-white w-11/12 max-w-sm rounded-2xl p-6 items-center shadow-lg">
+            <TouchableOpacity
+              className="absolute top-4 right-4"
+              onPress={() => setShowCoverPhotoSuccessModal(false)}
+            >
+              <X size={24} color="black" />
+            </TouchableOpacity>
+            
+            <Text className="text-3xl font-[Poppins] text-center my-4">
+              COVER PHOTO UPDATED
+            </Text>
+      
+            <Image
+              source={require("@/assets/images/imagecheck.png")}
+              style={{ width: 90, height: 90, marginBottom: 16 }}
+              resizeMode="contain"
+            />
+      
+            <Text className="text-lg mb-6 text-center">
+              Cover Photo Updated <Text className="font-bold text-green-600">Successfully!</Text>
+            </Text>
+      
+            <TouchableOpacity
+              onPress={() => setShowCoverPhotoSuccessModal(false)}
+              className="bg-green-500 py-3 rounded-lg items-center w-full"
+            >
+              <Text className="text-white font-bold text-lg">
+                Okay
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showProfilePhotoSuccessModal}
+        onRequestClose={() => setShowProfilePhotoSuccessModal(false)}
+      >
+        <View className="flex-1 justify-center items-center bg-black/50">
+          <View className="bg-white w-11/12 max-w-sm rounded-2xl p-6 items-center shadow-lg">
+            <TouchableOpacity
+              className="absolute top-4 right-4"
+              onPress={() => setShowProfilePhotoSuccessModal(false)}
+            >
+              <X size={24} color="black" />
+            </TouchableOpacity>
+            
+            <Text className="text-3xl font-[Poppins] text-center my-4">
+              PROFILE PICTURE UPDATED
+            </Text>
+      
+            <Image
+              source={require("@/assets/images/profile-icon.png")}
+              style={{ width: 120, height: 120, marginBottom: 10 }}
+              resizeMode="contain"
+            />
+      
+            <Text className="text-lg mb-6 text-center">
+              Profile Photo Updated <Text className="font-bold text-green-600">Successfully!</Text>
+            </Text>
+      
+            <TouchableOpacity
+              onPress={() => setShowProfilePhotoSuccessModal(false)}
+              className="bg-green-500 py-3 rounded-lg items-center w-full"
+            >
+              <Text className="text-white font-bold text-lg">
+                Okay
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>

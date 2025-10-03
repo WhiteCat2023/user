@@ -22,7 +22,8 @@ import {
   Info,
   Link,
   Save,
-  Trash2
+  Trash2,
+  X
 } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -57,6 +58,7 @@ export default function EditReport() {
   const [selectedImage, setSelectedImage] = useState(null);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [selectedPhotosForDeletion, setSelectedPhotosForDeletion] = useState([]);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showTierInfo, setShowTierInfo] = useState(false);
 
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -123,7 +125,6 @@ export default function EditReport() {
     try {
       const docRef = doc(db, "allReports", id);
       await updateDoc(docRef, { tier: value });
-      Alert.alert("Success", "Tier updated successfully!");
     } catch (error) {
       setTier(previousTier);
       console.error("Error updating tier: ", error);
@@ -148,8 +149,7 @@ export default function EditReport() {
         description,
         tier,
       });
-      Alert.alert("Success", "Report updated successfully.");
-      router.back();
+      setShowSuccessModal(true);
     } catch (error) {
       console.error("Error updating report: ", error);
       Alert.alert("Error", "Failed to update report.");
@@ -306,7 +306,6 @@ export default function EditReport() {
         const docRef = doc(db, "allReports", id);
         await updateDoc(docRef, { images: updatedImages });
 
-        Alert.alert("Success", "Photo added successfully!");
       } else {
         throw new Error("Image upload returned no URL.");
       }
@@ -316,6 +315,11 @@ export default function EditReport() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    router.back();
   };
 
   if (loading) {
@@ -532,7 +536,6 @@ export default function EditReport() {
                   </PopoverBody>
                 </PopoverContent>
               </Popover>
-
               )}
             </View>
           </View>
@@ -566,82 +569,125 @@ export default function EditReport() {
             </TouchableOpacity>
           </Modal>
 
-          {/* Attached Files */}
-          <View>
-            <Text className="text-lg font-bold mb-2">Files Attached:</Text>
+          {/* Photos */}
+          <View className="mb-4">
+            <Text className="text-lg font-bold mb-2">Photos</Text>
             <View className="flex-row flex-wrap">
-              {images.map((uri, index) => {
-                const isSelectedForDeletion = selectedPhotosForDeletion.includes(uri);
-                return (
-                <TouchableOpacity 
-                  key={index} 
+              {images.map((imageUrl, index) => (
+                <TouchableOpacity
+                  key={index}
                   onPress={() => {
                     if (isDeleteMode) {
-                      handleSelectImageForDeletion(uri);
+                      handleSelectImageForDeletion(imageUrl);
                     } else {
-                      setSelectedImage(uri);
+                      setSelectedImage(imageUrl);
                     }
                   }}
-                  className="mr-2 mb-2"
+                  className="m-1"
                 >
                   <Image
-                    source={{ uri }}
-                    className="w-24 h-24 rounded-md bg-gray-200"
+                    source={{ uri: imageUrl }}
+                    className="w-24 h-24 rounded-lg"
                   />
                   {isDeleteMode && (
-                    <View 
-                      className="absolute inset-0 rounded-md justify-center items-center"
-                      style={{ 
-                        backgroundColor: isSelectedForDeletion ? 'rgba(0,0,0,0.5)' : 'transparent',
-                        borderWidth: 2,
-                        borderColor: isSelectedForDeletion ? '#16A34A' : 'transparent'
-                      }}
+                    <View
+                      className={`absolute top-1 right-1 w-6 h-6 rounded-full border-2 border-white flex items-center justify-center ${
+                        selectedPhotosForDeletion.includes(imageUrl)
+                          ? "bg-red-500"
+                          : "bg-gray-500/50"
+                      }`}
                     >
-                      {isSelectedForDeletion && <Check size={32} color="white" />}
+                      <Check size={16} color="white" />
                     </View>
                   )}
                 </TouchableOpacity>
-              )})}
+              ))}
             </View>
             <View className="flex-row mt-4">
               <TouchableOpacity
                 onPress={handleAddPhoto}
-                className="flex-row items-center bg-green-600 p-2 rounded-lg mr-2"
-                disabled={isDeleteMode || saving}
+                className="flex-row items-center bg-[#16A34A] p-2 rounded-lg mr-2"
               >
                 <Link size={16} color="white" />
                 <Text className="text-white ml-1 font-semibold">Add Photo</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleDeletePhoto}
-                disabled={saving}
                 className={`flex-row items-center p-2 rounded-lg ${
-                  isDeleteMode && selectedPhotosForDeletion.length > 0 ? 'bg-green-600' : 'bg-red-500'
+                  isDeleteMode ? "bg-red-600" : "bg-red-500"
                 }`}
               >
                 <Trash2 size={16} color="white" />
                 <Text className="text-white ml-1 font-semibold">
-                  {isDeleteMode 
-                    ? `Delete (${selectedPhotosForDeletion.length})`
-                    : "Delete Photo"}
+                  {isDeleteMode ? "Confirm Deletion" : "Delete Photo"}
                 </Text>
               </TouchableOpacity>
-              {isDeleteMode && (
-                <TouchableOpacity
-                  onPress={() => {
-                    setIsDeleteMode(false);
-                    setSelectedPhotosForDeletion([]);
-                  }}
-                  className="flex-row items-center bg-gray-500 p-2 rounded-lg ml-2"
-                >
-                  <Text className="text-white font-semibold">Cancel</Text>
-                </TouchableOpacity>
-              )}
             </View>
           </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+
+          {/* Image Modal */}
+          <Modal
+            visible={!!selectedImage}
+            transparent={true}
+            onRequestClose={() => setSelectedImage(null)}
+          >
+            <View className="flex-1 bg-black/80 justify-center items-center">
+              <TouchableOpacity
+                className="absolute top-10 right-5"
+                onPress={() => setSelectedImage(null)}
+              >
+                <Text className="text-white text-2xl">X</Text>
+              </TouchableOpacity>
+              <Image
+                source={{ uri: selectedImage }}
+                className="w-11/12 h-3/4"
+                resizeMode="contain"
+              />
+            </View>
+          </Modal>
+          </View>
+        </ScrollView>
+        <Modal
+            visible={showSuccessModal}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={handleSuccessModalClose}
+        >
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                <View style={{ backgroundColor: 'white', borderRadius: 20, padding: 35, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4, elevation: 5, width: '90%' }}>
+                    <TouchableOpacity
+                        style={{ position: 'absolute', right: 10, top: 10 }}
+                        onPress={handleSuccessModalClose}
+                    >
+                        <X size={24} color="black" />
+                    </TouchableOpacity>
+                    
+                    <Text style={{ fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginVertical: 16 }}>
+                        REPORT UPDATED
+                    </Text>
+            
+                    <Image
+                        source={require("@/assets/images/report-update.png")}
+                        style={{ width: 90, height: 90, marginBottom: 16 }}
+                        resizeMode="contain"
+                    />
+            
+                    <Text style={{ fontSize: 18, marginBottom: 24, textAlign: 'center' }}>
+                        Report Updated <Text style={{ fontWeight: 'bold', color: '#28a745' }}>Successfully!</Text>
+                    </Text>
+            
+                    <TouchableOpacity
+                        onPress={handleSuccessModalClose}
+                        style={{ backgroundColor: '#28a745', paddingVertical: 12, borderRadius: 8, alignItems: 'center', width: '100%' }}
+                    >
+                        <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18 }}>
+                            Okay
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </Modal>
+      </SafeAreaView>
     </GluestackUIProvider>
   );
 }

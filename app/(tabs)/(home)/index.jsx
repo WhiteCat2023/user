@@ -237,16 +237,16 @@ const ForumsScreen = () => {
       <StatusBar barStyle="dark-content" />
 
       {/* HEADER */}
-      <Box className="flex-row items-center justify-between mt-4 mb-6">
+      <Box className="flex-row items-center justify-between mt-2 ">
         <Box className="flex-row items-center">
           <Image
             source={require("@/assets/images/ariba-logo.png")}
-            style={{ width: 60, height: 60, marginRight: 3 }}
+            style={{ width: 80, height: 80, marginRight: 2, marginBottom: 12 }}
             resizeMode="contain"
           />
-          <Text className="text-green-700 text-3xl font-[Pacifico]">Ariba</Text>
+          
         </Box>
-        <Box className="w-[140px] mt-5">
+        <Box className="w-[140px] h-11 mt-6">
           <SearchBar
             value={searchQuery}
             onChangeText={(text) => setSearchQuery(text)}

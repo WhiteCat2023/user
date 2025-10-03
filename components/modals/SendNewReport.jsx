@@ -2,7 +2,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as Location from 'expo-location';
 import { ChevronDown, InfoIcon, X } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { uploadUserReport } from '../../api/controller/storage.controller';
 import { Button, ButtonText } from '../../components/ui/button';
 import { Divider } from '../../components/ui/divider';
@@ -17,6 +17,7 @@ import { useAuth } from '../../context/AuthContext';
 import { HttpStatus } from '../../enums/status';
 import { TierList } from '../../enums/tier';
 
+
 const SendNewReport = ({ visible, onClose }) => {
     const [input, setInput] = useState({
         title: "",
@@ -29,6 +30,8 @@ const SendNewReport = ({ visible, onClose }) => {
 
     const [showTierModal, setShowTierModal] = useState(false);
     const [showLegendModal, setShowLegendModal] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
 
     const [isError, setError] = useState({
         title: false,
@@ -45,10 +48,10 @@ const SendNewReport = ({ visible, onClose }) => {
             (async () => {
                 try {
                     let location = await Location.getCurrentPositionAsync({});
-                    handleChange('location', {
-                        latitude: location.coords.latitude,
-                        longitude: location.coords.longitude,
-                    });
+                    handleChange('location', [
+                        location.coords.longitude,
+                        location.coords.latitude
+                    ]);
                 } catch (error) {
                     console.error("Failed to get location:", error);
                     setError(prev => ({ ...prev, location: true }));
@@ -126,16 +129,27 @@ const SendNewReport = ({ visible, onClose }) => {
 
     const handleSubmit = async () => {
         if (validateInput()) {
-            const result = await uploadUserReport(input, user);
-            if (result.status === HttpStatus.OK) {
-                Alert.alert("Success", "Report submitted successfully!");
-                handleOnClose();
-            } else {
-                Alert.alert("Error", result.message || "Failed to submit report.");
+            setIsSubmitting(true);
+            try {
+                const result = await uploadUserReport(input, user);
+                if (result.status === HttpStatus.OK) {
+                    setShowSuccessModal(true);
+                } else {
+                    Alert.alert("Error", result.message || "Failed to submit report.");
+                }
+            } catch (error) {
+                Alert.alert("Error", "An unexpected error occurred while submitting the report.");
+            } finally {
+                setIsSubmitting(false);
             }
         } else {
             Alert.alert("Validation Error", "Please fill in all required fields and upload at least one image.");
         }
+    };
+
+    const handleSuccessModalClose = () => {
+        setShowSuccessModal(false);
+        handleOnClose();
     };
 
     const removeImage = (index) => {
@@ -220,7 +234,7 @@ const SendNewReport = ({ visible, onClose }) => {
                             </FormControlLabel>
                             <View style={styles.locationContainer}>
                                 <Text style={styles.locationText}>
-                                    {input.location ? `Lat: ${input.location.latitude.toFixed(4)}, Lon: ${input.location.longitude.toFixed(4)}` : 'Fetching location...'}
+                                    {input.location ? `Long: ${input.location[0].toFixed(6)}, Lat: ${input.location[1].toFixed(6)}` : 'Fetching location...'}
                                 </Text>
                             </View>
                             {isError.location && <FormControlLabelText style={{ color: 'red', fontSize: 12, marginTop: 4 }}>Location is required.</FormControlLabelText>}
@@ -248,10 +262,14 @@ const SendNewReport = ({ visible, onClose }) => {
 
 
                         <View style={styles.actionButtons}>
-                            <Button style={[styles.button, styles.submitButton]} onPress={handleSubmit}>
-                                <ButtonText style={{ fontSize: 13, height: 20 }}>Submit Report</ButtonText>
+                            <Button style={[styles.button, styles.submitButton]} onPress={handleSubmit} disabled={isSubmitting}>
+                                {isSubmitting ? (
+                                    <ActivityIndicator color="white" />
+                                ) : (
+                                    <ButtonText style={{ fontSize: 13, height: 20 }}>Submit Report</ButtonText>
+                                )}
                             </Button>
-                            <Button style={[styles.button, styles.deleteButton]} onPress={handleOnClose}>
+                            <Button style={[styles.button, styles.deleteButton]} onPress={handleOnClose} disabled={isSubmitting}>
                                 <ButtonText style={{ fontSize: 13, height: 20 }}>Delete Report</ButtonText>
                             </Button>
                         </View>
@@ -329,6 +347,46 @@ const SendNewReport = ({ visible, onClose }) => {
                         </View>
                     </View>
                 </TouchableOpacity>
+            </Modal>
+            <Modal
+                visible={showSuccessModal}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={handleSuccessModalClose}
+            >
+                <View style={styles.centeredView}>
+                    <View style={styles.modalView}>
+                        <TouchableOpacity
+                            style={styles.closeButton}
+                            onPress={handleSuccessModalClose}
+                        >
+                            <X size={24} color="black" marginRight={12} marginTop={12} />
+                        </TouchableOpacity>
+
+                        <Text style={{ fontFamily: 'Poppins', fontSize: 30, textAlign: 'center', }}>
+                            REPORT SUBMITTED
+                        </Text>
+                
+                        <Image
+                                      source={require("@/assets/images/report-icon.png")}
+                                      style={{ width: 120, height: 120, marginBottom: 16 }}
+                                      resizeMode="contain"
+                                    />
+                
+                        <Text style={{ fontSize: 18, marginBottom: 24, marginTop: 10, textAlign: 'center' }}>
+                            Report Submitted <Text style={{ fontWeight: 'bold', color: '#28a745' }}>Successfully!</Text>
+                        </Text>
+                
+                        <TouchableOpacity
+                            onPress={handleSuccessModalClose}
+                            style={{ backgroundColor: '#28a745', paddingVertical: 12, borderRadius: 8, alignItems: 'center', width: '100%' }}
+                        >
+                            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18 }}>
+                                Okay
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
             </Modal>
         </Modal>
     );

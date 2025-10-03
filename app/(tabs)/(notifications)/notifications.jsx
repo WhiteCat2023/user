@@ -135,20 +135,20 @@ const Notifications = () => {
       <StatusBar barStyle="dark-content" />
 
       {/* Header */}
-      <View className="px-4 pt-5 pb-4">
+      <View className="px-4 pt-3 pb-4">
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center">
             <Image
               source={require("../../../assets/images/ariba-logo.png")}
-              style={{ width: 60, height: 60, marginRight: 10 }}
+              style={{ width: 80, height: 80, marginRight: 1 }}
               resizeMode="contain"
             />
-            <RNText className="text-2xl font-[Poppins]">NOTIFICATION</RNText>
+            <RNText className="text-3xl font-[Poppins]">NOTIFICATION</RNText>
           </View>
         </View>
 
         {/* Search + Filter */}
-        <View className="flex-row items-center justify-end mt-2">
+        <View className="flex-row items-center justify-end">
           <Box className="w-[160px] h-10">
             <SearchBar
               value={searchQuery}

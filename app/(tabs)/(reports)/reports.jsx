@@ -1,16 +1,26 @@
-import { db } from "@/api/config/firebase.config";
+import { db, storage } from "@/api/config/firebase.config";
 import SearchBar from "@/components/inputs/searchbar/SearchBar";
 import { Box } from "@/components/ui/box";
 import { useAuth } from "@/context/AuthContext";
 import { format } from "date-fns";
 import { useRouter } from "expo-router";
-import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
-import { Edit3, Filter as FilterIcon, Trash2 } from "lucide-react-native";
+import {
+  collection,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  orderBy,
+  query,
+} from "firebase/firestore";
+import { deleteObject, ref } from "firebase/storage";
+import { Edit3, Filter as FilterIcon, Trash2, X } from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Image,
+  Modal,
   RefreshControl,
   Text as RNText,
   SafeAreaView,
@@ -29,6 +39,9 @@ export default function Reports() {
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState(null);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [reportToDelete, setReportToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // fetch reports (like Notifications code, no index required)
   const fetchReports = useCallback(() => {
@@ -92,6 +105,43 @@ export default function Reports() {
     setFilteredReports(filtered);
   }, [searchQuery, statusFilter, reports]);
 
+  const openDeleteModal = (report) => {
+    setReportToDelete(report);
+    setDeleteModalVisible(true);
+  };
+
+  const closeDeleteModal = () => {
+    setReportToDelete(null);
+    setDeleteModalVisible(false);
+  };
+
+  const handleDeleteReport = async () => {
+    if (!reportToDelete) return;
+    setIsDeleting(true);
+
+    const { id, images } = reportToDelete;
+
+    try {
+      // Delete images from Firebase Storage
+      if (images && images.length > 0) {
+        const deletePromises = images.map((imageUrl) => {
+          const imageRef = ref(storage, imageUrl);
+          return deleteObject(imageRef);
+        });
+        await Promise.all(deletePromises);
+      }
+
+      // Delete the report document from Firestore
+      await deleteDoc(doc(db, "allReports", id));
+    } catch (error) {
+      console.error("Error deleting report: ", error);
+      Alert.alert("Error", "Failed to delete the report.");
+    } finally {
+      setIsDeleting(false);
+      closeDeleteModal();
+    }
+  };
+
   const onRefresh = () => {
     setRefreshing(true);
     fetchReports();
@@ -121,22 +171,22 @@ export default function Reports() {
       <StatusBar barStyle="dark-content" />
 
       {/* Header */}
-      <View className="px-4 pt-5 pb-3">
+      <View className="px-4 pt-3 pb-3">
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center">
             <Image
               source={require("../../../assets/images/ariba-logo.png")}
-              style={{ width: 50, height: 50, marginRight: 8 }}
+              style={{ width: 80, height: 80, marginRight: 2 }}
               resizeMode="contain"
             />
-            <RNText className="text-2xl font-extrabold text-black">
+            <RNText className="text-3xl font-[Poppins] text-black">
               REPORTS
             </RNText>
           </View>
         </View>
 
         {/* Search + Filter */}
-        <View className="flex-row items-center justify-end mt-3">
+        <View className="flex-row items-center justify-end">
           <Box className="w-[160px] h-10">
             <SearchBar
               value={searchQuery}
@@ -251,7 +301,10 @@ export default function Reports() {
                       >
                         <Edit3 size={16} color="#fff" />
                       </TouchableOpacity>
-                      <TouchableOpacity className="w-7 h-7 items-center justify-center rounded-md bg-red-500">
+                      <TouchableOpacity
+                        onPress={() => openDeleteModal(item)}
+                        className="w-7 h-7 items-center justify-center rounded-md bg-red-500"
+                      >
                         <Trash2 size={16} color="#fff" />
                       </TouchableOpacity>
                     </View>
@@ -312,6 +365,59 @@ export default function Reports() {
           </View>
         }
       />
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={deleteModalVisible}
+        onRequestClose={closeDeleteModal}
+      >
+        <View className="flex-1 justify-center items-center bg-black/50">
+          <View className="bg-white w-11/12 max-w-sm rounded-2xl p-6 shadow-lg items-center">
+            <TouchableOpacity
+              className="absolute top-4 right-4"
+              onPress={closeDeleteModal}
+            >
+              <X size={24} color="black" />
+            </TouchableOpacity>
+
+            <RNText className="text-4xl font-[Poppins] text-center mt-4 mb-4">
+              REPORT{"\n"}DELETION
+            </RNText>
+
+            <Trash2 size={80} color="#EF4444" className="my-6" />
+
+            <RNText className="text-center text-lg mb-2 mt-3">
+              Are you sure you want to
+            </RNText>
+            <RNText className="text-center text-lg font-bold mb-8">
+              Delete this report?
+            </RNText>
+
+            <View className="flex-row w-full">
+              <TouchableOpacity
+                onPress={handleDeleteReport}
+                className="flex-1 bg-red-500 py-3 rounded-lg items-center mr-2"
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <RNText className="text-white font-bold text-lg">
+                    Delete
+                  </RNText>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={closeDeleteModal}
+                className="flex-1 bg-green-500 py-3 rounded-lg items-center ml-2"
+                disabled={isDeleting}
+              >
+                <RNText className="text-white font-bold text-lg">Cancel</RNText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
