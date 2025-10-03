@@ -4,6 +4,13 @@ import SearchBar from "@/components/inputs/searchbar/SearchBar";
 import { Box } from "@/components/ui/box";
 import { Button, ButtonText } from "@/components/ui/button";
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
+import {
+  Popover,
+  PopoverArrow,
+  PopoverBackdrop,
+  PopoverBody,
+  PopoverContent,
+} from "@/components/ui/popover";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
@@ -50,6 +57,7 @@ export default function EditReport() {
   const [selectedImage, setSelectedImage] = useState(null);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [selectedPhotosForDeletion, setSelectedPhotosForDeletion] = useState([]);
+  const [showTierInfo, setShowTierInfo] = useState(false);
 
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
@@ -466,7 +474,65 @@ export default function EditReport() {
               {tierSaving ? (
                 <ActivityIndicator size="small" color="#16A34A" style={{ marginLeft: 8 }} />
               ) : (
-                <Info size={24} color="gray" className="ml-2" />
+                              <Popover
+                isOpen={showTierInfo}
+                onClose={() => setShowTierInfo(false)}
+                onOpen={() => setShowTierInfo(true)}
+                placement="top"
+                trigger={(triggerProps) => {
+                  return (
+                    <TouchableOpacity {...triggerProps}>
+                      <Info size={24} color="gray" className="ml-2" />
+                    </TouchableOpacity>
+                  );
+                }}
+              >
+                <PopoverBackdrop />
+                <PopoverContent className="mx-5 w-92 rounded-lg">
+                  <PopoverArrow />
+                  <PopoverBody>
+                    <Text className="font-bold text-lg mb-2">Legend:</Text>
+                    <View className="mb-1">
+                      <Text>
+                        <Text className="font-bold text-green-600">
+                          Low
+                        </Text>
+                        - use this to identify that the report is in low
+                        priority/not so important, can wait longer or just for
+                        awareness, no action needed.
+                      </Text>
+                    </View>
+                    <View className="mb-1">
+                      <Text>
+                        <Text className="font-bold text-yellow-500">
+                          Medium
+                        </Text>
+                        - use this to identify that the report is of medium
+                        priority, needs attention but not immediate action.
+                      </Text>
+                    </View>
+                    <View className="mb-1">
+                      <Text>
+                        <Text className="font-bold text-orange-500">
+                          High
+                        </Text>
+                        - use this to identify that the report is of high
+                        priority, needs attention and action soon.
+                      </Text>
+                    </View>
+                    <View>
+                      <Text>
+                        <Text className="font-bold text-red-600">
+                          Emergency
+                        </Text>
+                        - use this to identify that the report is urgent and
+                        needs immediate attention action.
+                      </Text>
+                    </View>
+                  </PopoverBody>
+                </PopoverContent>
+              </Popover>
+
               )}
             </View>
           </View>

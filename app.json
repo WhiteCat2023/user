@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "user",
-    "slug": "user",
+    "slug": "user-side",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/adaptive-icon.png",
@@ -20,7 +20,12 @@
       },
       "edgeToEdgeEnabled": false,
       "predictiveBackGestureEnabled": false,
-      "package": "com.itan123.user"
+      "package":"com.whitecat2023.ariba",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyBXEUzzVkNk1BpBESFqbftnG6Om66vNPY0"
+        }
+      }
     },
     "web": {
       "output": "static",
@@ -48,9 +53,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "7c1c9380-049f-4143-a6f6-f0ca8cbb6c71"
+        "projectId": "24e0124d-997b-48d9-9474-0d725baaca7b"
       }
     },
-    "owner": "itan123"
+    "owner": "whitecat2023"
   }
 }

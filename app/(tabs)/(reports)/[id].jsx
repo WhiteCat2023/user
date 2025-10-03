@@ -1,5 +1,12 @@
 import { db } from "@/api/config/firebase.config";
 import { Box } from "@/components/ui/box";
+import {
+  Popover,
+  PopoverArrow,
+  PopoverBackdrop,
+  PopoverBody,
+  PopoverContent,
+} from "@/components/ui/popover";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { doc, getDoc } from "firebase/firestore";
 import { ChevronLeft, Info, X } from "lucide-react-native";
@@ -24,6 +31,7 @@ export default function ReportDetails() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const [showTierInfo, setShowTierInfo] = useState(false);
 
   const openImageModal = (uri) => {
     setSelectedImage(uri);
@@ -142,7 +150,64 @@ export default function ReportDetails() {
               <View className="flex-1 border border-gray-300 rounded-md p-3 bg-gray-50 mr-3">
                 <RNText className="text-base">{report.tier}</RNText>
               </View>
-              <Info size={24} color="gray" className="ml-2" />
+              <Popover
+                isOpen={showTierInfo}
+                onClose={() => setShowTierInfo(false)}
+                onOpen={() => setShowTierInfo(true)}
+                placement="top"
+                trigger={(triggerProps) => {
+                  return (
+                    <TouchableOpacity {...triggerProps}>
+                      <Info size={24} color="gray" className="ml-2" />
+                    </TouchableOpacity>
+                  );
+                }}
+              >
+                <PopoverBackdrop />
+                <PopoverContent className="mx-5 w-92 rounded-lg">
+                  <PopoverArrow />
+                  <PopoverBody>
+                    <RNText className="font-bold text-lg mb-2">Legend:</RNText>
+                    <View className="mb-1">
+                      <RNText>
+                        <RNText className="font-bold text-green-600">
+                          Low
+                        </RNText>
+                        - use this to identify that the report is in low
+                        priority/not so important, can wait longer or just for
+                        awareness, no action needed.
+                      </RNText>
+                    </View>
+                    <View className="mb-1">
+                      <RNText>
+                        <RNText className="font-bold text-yellow-500">
+                          Medium
+                        </RNText>
+                        - use this to identify that the report is of medium
+                        priority, needs attention but not immediate action.
+                      </RNText>
+                    </View>
+                    <View className="mb-1">
+                      <RNText>
+                        <RNText className="font-bold text-orange-500">
+                          High
+                        </RNText>
+                        - use this to identify that the report is of high
+                        priority, needs attention and action soon.
+                      </RNText>
+                    </View>
+                    <View>
+                      <RNText>
+                        <RNText className="font-bold text-red-600">
+                          Emergency
+                        </RNText>
+                        - use this to identify that the report is urgent and
+                        needs immediate attention action.
+                      </RNText>
+                    </View>
+                  </PopoverBody>
+                </PopoverContent>
+              </Popover>
             </View>
           </View>
 
