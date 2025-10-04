@@ -20,7 +20,7 @@
       },
       "edgeToEdgeEnabled": false,
       "predictiveBackGestureEnabled": false,
-      "package":"com.whitecat2023.ariba",
+      "package": "com.whitecat2023.ariba",
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyBXEUzzVkNk1BpBESFqbftnG6Om66vNPY0"
@@ -44,7 +44,15 @@
             "backgroundColor": "#000000"
           }
         }
+      ],
+            [
+        "expo-maps",
+        {
+          "requestLocationPermission": true,
+          "locationPermission": "Allow $(PRODUCT_NAME) to use your location"
+        }
       ]
+
     ],
     "experiments": {
       "typedRoutes": true,
