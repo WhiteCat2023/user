@@ -1,34 +1,32 @@
 import { db } from "@/api/config/firebase.config"
 import { useAuth } from "@/context/AuthContext"
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import * as Clipboard from "expo-clipboard"
 import { useLocalSearchParams, useRouter } from "expo-router"
 import {
-    addDoc,
-    collection,
-    deleteDoc,
-    doc,
-    getDoc,
-    increment,
-    onSnapshot,
-    orderBy,
-    query,
-    serverTimestamp,
-    setDoc,
-    updateDoc,
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  increment,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
 } from "firebase/firestore"
-import { ArrowLeft, Bookmark, ChevronDown, Copy, Heart, MessageCircle, MoreVertical, Share2 } from "lucide-react-native"
+import { ArrowLeft, Bookmark, Heart, MessageCircle, MoreVertical, Share2 } from "lucide-react-native"
 import { useEffect, useState } from "react"
 import {
-    Alert,
-    Image,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    Share,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  Share,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native"
 
 // ✅ Gluestack UI
@@ -36,7 +34,6 @@ import SearchBar from "@/components/inputs/searchbar/SearchBar"
 import { Box } from "@/components/ui/box"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Grid, GridItem } from "@/components/ui/grid"
 import { Heading } from "@/components/ui/heading"
 import { Text } from "@/components/ui/text"
 import { Reply } from "lucide-react-native"
@@ -69,7 +66,7 @@ const ForumDetails = () => {
     await addDoc(collectionRef, {
       content: replyText[parentId],
       authorName: user?.displayName || "Anonymous",
-      authorPhoto: user?.photoURL || "https://i.pravatar.cc/100",
+      authorPhoto: user?.photoURL,
       authorId: user?.uid,
       likesCount: 0,
       timestamp: serverTimestamp(),
@@ -87,7 +84,6 @@ const ForumDetails = () => {
   const { id } = useLocalSearchParams()
   const { user } = useAuth()
   const router = useRouter()
-  const isWeb = Platform.OS === "web"
 
   const [forum, setForum] = useState(null)
   const [allComments, setAllComments] = useState([])
@@ -252,7 +248,7 @@ const [commentFilter, setCommentFilter] = useState("Newest") // "Newest" | "Olde
     await addDoc(collection(db, "forums", id, "comments"), {
       content: newComment,
       authorName: user?.displayName || "Anonymous",
-      authorPhoto: user?.photoURL || "https://i.pravatar.cc/100",
+      authorPhoto: user?.photoURL,
       authorId: user?.uid,
       likesCount: 0,
       timestamp: serverTimestamp(),
@@ -318,7 +314,7 @@ const [commentFilter, setCommentFilter] = useState("Newest") // "Newest" | "Olde
     await addDoc(collection(db, "forums", id, "comments", parentId, "replies"), {
       content: replyText[parentId],
       authorName: user?.displayName || "Anonymous",
-      authorPhoto: user?.photoURL || "https://i.pravatar.cc/100",
+      authorPhoto: user?.photoURL,
       authorId: user?.uid,
       likesCount: 0,
       timestamp: serverTimestamp(),
@@ -348,12 +344,13 @@ const [commentFilter, setCommentFilter] = useState("Newest") // "Newest" | "Olde
     const children = commentMap[item.id] || []
     const isOwner = item.authorId === user?.uid
     const isEditing = item.parentId ? editingReply?.[item.id] : editingComment === item.id
+    const displayLevel = Math.min(level, 1); // Cap visual level at 1
 
     return (
       <View key={item.id} style={{ flexDirection: "row", marginBottom: 8 }}>
         {/* Connector line */}
-        <View style={{ width: 16 * level, alignItems: "center" }}>
-          {level > 0 && <View style={{ width: 2, backgroundColor: "#ccc", flex: 1 }} />}
+        <View style={{ width: 1 * displayLevel, alignItems: "center" }}>
+          {displayLevel > 0 && <View style={{ width: 1, backgroundColor: "#ccc", flex: 1 }} />}
         </View>
 
         {/* Comment / Reply Card */}
@@ -362,7 +359,7 @@ const [commentFilter, setCommentFilter] = useState("Newest") // "Newest" | "Olde
           <Box className="flex-row justify-between items-start mb-1">
             <Box className="flex-row items-center">
               <Image
-                source={{ uri: item.authorPhoto || "https://i.pravatar.cc/100" }}
+                source={{ uri: item.authorPhoto || "https://www.shutterstock.com/image-vector/blank-avatar-photo-place-holder-600nw-1095249842.jpg" }}
                 style={{ width: 30, height: 30, borderRadius: 15, marginRight: 6 }}
               />
               <Text bold>{item.authorName}</Text>
@@ -528,7 +525,6 @@ if (commentFilter === "Newest") {
 
 
    // ========== MOBILE (Expo Go) ==========
-if (!isWeb) {
   return (
     <SafeAreaView className="flex-1 bg-[#D9E9DD] p-3">
       <ScrollView className="h-full">
@@ -633,198 +629,6 @@ if (!isWeb) {
           </View>
         </View>
       )}
-    </SafeAreaView>
-  )
-}
-
-
-
-  return (
-    <SafeAreaView className="flex-1 bg-[#D9E9DD] p-4">
-      <ScrollView className="h-full">
-        <Grid _extra={{ className: "grid-cols-12 gap-4 items-center mb-4" }}>
-          <GridItem _extra={{ className: "col-span-8" }}>
-            <Heading size="5xl" className="mt-6">Ariba</Heading>
-          </GridItem>
-          <GridItem className="flex items-center" _extra={{ className: "col-span-4" }}>
-            <SearchBar value={searchQuery} onChangeText={setSearchQuery} placeholder="Search..." className="w-full h-12 border border-gray-400 rounded-md px-3"/>
-          </GridItem>
-        </Grid>
-
-        <Box className="bg-white rounded-xl p-6 shadow-sm flex-1">
-          {forumMatchesSearch ? (
-            <>
-              <TouchableOpacity onPress={() => router.back()} className="mb-4">
-                <ArrowLeft size={24} color="black" />
-              </TouchableOpacity>
-
-              {forum.reposted && forum.repostedBy && (
-                <Text className="text-sm text-gray-500 mb-2">
-                  Reposted by {forum.repostedBy.name}
-                </Text>
-              )}
-
-              <Heading size="4xl" className="mb-1">FORUMS</Heading>
-              <Text className="text-2xl font-semibold mb-4">
-  {forum.title || "Untitled Discussion"}
-</Text>
-
-              <Box className="flex-row items-center mb-2">
-                <Image source={{ uri: forum.authorPhoto }} style={{ width: 35, height: 35, borderRadius: 18, marginRight: 8 }} />
-                <Text bold>{forum.authorName}</Text>
-                <Text className="text-gray-500 ml-2 text-sm">
-                  {forum.timestamp?.toDate ? timeAgo(forum.timestamp.toDate(), now) : "..."}
-                </Text>
-              </Box>
-
-              <Text className="text-base text-gray-700 mb-5">{forum.content}</Text>
-
-              <Box className="flex-row items-center justify-between border-b border-gray-300 pb-3 mb-5">
-                <TouchableOpacity onPress={toggleForumLike} className="flex-row items-center">
-                  <Heart size={20} color={userLikes[id] ? "red" : "black"} fill={userLikes[id] ? "red" : "transparent"} />
-                  <Text className="ml-2">{forum.likesCount || 0} Likes</Text>
-                </TouchableOpacity>
-                <Box className="flex-row items-center">
-                  <MessageCircle size={20} />
-                  <Text className="ml-2">{forum.commentsCount || 0} Comments</Text>
-                </Box>
-
-                <Box className="flex-row space-x-4">
-  {/* ✅ Bookmark Toggle */}
-  <TouchableOpacity onPress={toggleBookmark}>
-    <Bookmark
-      size={20}
-      color={bookmarked ? "#22c55e" : "black"}   // Tailwind green-500
-      fill={bookmarked ? "#22c55e" : "transparent"} // ✅ Fill when bookmarked
-    />
-  </TouchableOpacity>
-
-  {/* ✅ Copy Button */}
-  <TouchableOpacity
-  onPress={async () => {
-    try {
-      await Clipboard.setStringAsync(`${forum.title}\n\n${forum.content}`)
-      setCopied(true)   // ✅ Show indicator
-      setTimeout(() => setCopied(false), 2000) // Hide after 2s
-    } catch (err) {
-      console.error("Error copying:", err)
-      Alert.alert("Error", "Could not copy content. Try again.")
-    }
-  }}
->
-  <Copy size={20} color="black" />
-</TouchableOpacity>
-
-  <TouchableOpacity onPress={shareForum}>
-    <Share2 size={20} />
-  </TouchableOpacity>
-</Box>
-              </Box>
-
-              {/* Comment Input + Sort Dropdown */}
-<Heading size="xl" className="mb-2">Comments</Heading>
-<TextInput
-  placeholder="Write your insights about the discussion..."
-  value={newComment}
-  onChangeText={setNewComment}
-  className="bg-gray-100 border border-gray-300 text-slate-700 rounded-md p-2 mb-2"
-  style={{ height: 80 }}
-  multiline
-  textAlignVertical="top"
-  onKeyPress={({ nativeEvent }) => {
-    if (nativeEvent.key === "Enter" && !nativeEvent.shiftKey) {
-      addComment()
-    }
-  }}
-/>
-
-<Box className="flex-row items-center justify-between relative z-50">
-  {/* Left: Floating Dropdown */}
-  <View style={{ position: "relative" }}>
-    <TouchableOpacity
-  style={{ flexDirection: "row", alignItems: "center", width: 140 }}
-  onPress={() => setFilterMenuOpen((p) => !p)}
->
-  <Text style={{ fontWeight: "500", fontSize: 14, marginRight: 4 }}>
-    {commentFilter}
-  </Text>
-  <ChevronDown size={16} color="#555" style={{ marginTop: "3"}}/>
-</TouchableOpacity>
-
-    {/* Floating Dropdown options */}
-{filterMenuOpen && (
-  <View
-    style={{
-      position: "absolute",
-      top: 28,
-      left: 0,
-      borderWidth: 1,
-      borderColor: "#e5e7eb",
-      backgroundColor: "#fff",
-      borderRadius: 6,
-      elevation: 10,
-      zIndex: 9999,
-      shadowColor: "#000",
-      shadowOpacity: 0.15,
-      shadowRadius: 6,
-      shadowOffset: { width: 0, height: 2 },
-    }}
-  >
-    {["Newest", "Oldest"].map((opt) => (
-      <TouchableOpacity
-        key={opt}
-        style={{ paddingVertical: 10, paddingHorizontal: 12 }}
-        onPress={() => {
-          setCommentFilter(opt)
-          setFilterMenuOpen(false)
-        }}
-      >
-        <Text style={{ fontSize: 14 }}>{opt}</Text>
-      </TouchableOpacity>
-    ))}
-  </View>
-)}
-  </View>
-
-  {/* Right: Comment buttons */}
-  <Box className="flex-row space-x-2">
-    <Button className="bg-green-600 px-4" onPress={addComment}>
-      <Text className="text-white">Comment</Text>
-    </Button>
-    <Button className="bg-gray-300 px-4" onPress={() => setNewComment("")}>
-      <Text className="text-black">Cancel</Text>
-    </Button>
-  </Box>
-</Box>
-
-              {/* Comments */}
-              {filteredComments.map(c => renderCommentThread(c))}
-            </>
-          ) : <Text className="text-center text-gray-500 py-10">No results found for "{searchQuery}"</Text>}
-        </Box>
-      </ScrollView>
-      {copied && (
-  <View
-    style={{
-      position: "absolute",
-      bottom: 40,
-      left: 0,
-      right: 0,
-      alignItems: "center",
-    }}
-  >
-    <View
-      style={{
-        backgroundColor: "black",
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 20,
-      }}
-    >
-      <Text style={{ color: "white" }}>✅ Copied to clipboard</Text>
-    </View>
-  </View>
-)}
     </SafeAreaView>
   )
 }

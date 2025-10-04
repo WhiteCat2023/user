@@ -137,7 +137,7 @@ const Bookmark = () => {
       </View>
 
       {/* White container for title and list */}
-      <View className="bg-white rounded-2xl shadow-lg mt-4 mx-4">
+      <View className="bg-white rounded-2xl shadow-lg mt-4 mx-4 flex-1">
         {/* Title Header */}
         <View className="p-4">
           <TouchableOpacity

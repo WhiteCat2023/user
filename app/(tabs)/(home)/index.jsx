@@ -3,6 +3,7 @@ import { useFonts } from "expo-font";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   Image,
   Modal,
@@ -55,6 +56,7 @@ const ForumsScreen = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredDiscussions, setFilteredDiscussions] = useState([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Update current time every minute
   useEffect(() => {
@@ -144,29 +146,38 @@ const ForumsScreen = () => {
 
   // Save discussion
   const saveDiscussion = async () => {
-    if (!newDiscussion.title?.trim() || !newDiscussion.description?.trim()) return;
+    if (!newDiscussion.title?.trim() || !newDiscussion.description?.trim() || isSaving) return;
 
-    if (editingId) {
-      await updateDoc(doc(db, "forums", editingId), {
-        title: newDiscussion.title,
-        content: newDiscussion.description,
-      });
-      setEditingId(null);
-    } else {
-      await addDoc(collection(db, "forums"), {
-        title: newDiscussion.title,
-        content: newDiscussion.description,
-        likesCount: 0,
-        commentsCount: 0,
-        authorName: user?.displayName || "Anonymous",
-        authorPhoto: user?.photoURL || "https://i.pravatar.cc/100",
-        authorId: user?.uid,
-        timestamp: serverTimestamp(),
-      });
+    setIsSaving(true);
+
+    try {
+      if (editingId) {
+        await updateDoc(doc(db, "forums", editingId), {
+          title: newDiscussion.title,
+          content: newDiscussion.description,
+        });
+        setEditingId(null);
+      } else {
+        await addDoc(collection(db, "forums"), {
+          title: newDiscussion.title,
+          content: newDiscussion.description,
+          likesCount: 0,
+          commentsCount: 0,
+          authorName: user?.displayName || "Anonymous",
+          authorPhoto: user?.photoURL || "https://i.pravatar.cc/100",
+          authorId: user?.uid,
+          timestamp: serverTimestamp(),
+        });
+      }
+
+      setNewDiscussion({ title: "", description: "" });
+      setModalVisible(false);
+    } catch (error) {
+      console.error("Error saving discussion:", error);
+      // Optionally, show an error message to the user
+    } finally {
+      setIsSaving(false);
     }
-
-    setNewDiscussion({ title: "", description: "" });
-    setModalVisible(false);
   };
 
   const deleteDiscussion = async (forumId) => {
@@ -376,16 +387,26 @@ const ForumsScreen = () => {
               />
 
               <View className="flex-row justify-between mt-2">
-                <TouchableOpacity className="flex-1 bg-green-600 py-3 rounded-md mr-2 items-center" onPress={saveDiscussion}>
-                  <Text className="text-white font-semibold">Confirm</Text>
+                <TouchableOpacity
+                  className="flex-1 bg-green-600 py-3 rounded-md mr-2 items-center"
+                  onPress={saveDiscussion}
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <ActivityIndicator color="white" />
+                  ) : (
+                    <Text className="text-white font-semibold">Confirm</Text>
+                  )}
                 </TouchableOpacity>
                 <TouchableOpacity
                   className="flex-1 bg-red-600 py-3 rounded-md ml-2 items-center"
                   onPress={() => {
+                    if (isSaving) return;
                     setModalVisible(false);
                     setEditingId(null);
                     setNewDiscussion({ title: "", description: "" });
                   }}
+                  disabled={isSaving}
                 >
                   <Text className="text-white font-semibold">Cancel</Text>
                 </TouchableOpacity>

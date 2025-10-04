@@ -43,8 +43,10 @@ const { user } = useAuth(); // Add this at the top of the component
     setMessages((prev) => [...prev, typingMessage]);
 
     try {
+      const N8N_WEBHOOK_URL = "http://192.168.1.23:5678/webhook-test/de96b7cc-d472-4bf4-b534-1de06cb85947";
+
       const response = await fetch(
-        "https://ethangabril.app.n8n.cloud/webhook-test/de96b7cc-d472-4bf4-b534-1de06cb85947",
+        N8N_WEBHOOK_URL,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
