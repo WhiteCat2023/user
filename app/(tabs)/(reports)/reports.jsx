@@ -272,8 +272,8 @@ export default function Reports() {
                     {item.description || "No description"}
                   </RNText>
 
-                  {/* Show "Click to see more..." if description length is long */}
-                  {item.description && item.description.length > 80 && (
+                  {/* Show "Click to see more..." */}
+                  {item.description && (
                     <TouchableOpacity
                       onPress={() =>
                         router.push(`/(tabs)/(reports)/${item.id}`)

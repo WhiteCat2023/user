@@ -32,6 +32,7 @@ const SendNewReport = ({ visible, onClose }) => {
     const [showLegendModal, setShowLegendModal] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [address, setAddress] = useState("Fetching location...");
 
     const [isError, setError] = useState({
         title: false,
@@ -47,13 +48,28 @@ const SendNewReport = ({ visible, onClose }) => {
         if (visible) {
             (async () => {
                 try {
+                    let { status } = await Location.requestForegroundPermissionsAsync();
+                    if (status !== 'granted') {
+                        Alert.alert("Permission Denied", "Permission to access location was denied.");
+                        setAddress("Location permission denied.");
+                        setError(prev => ({ ...prev, location: true }));
+                        return;
+                    }
+
                     let location = await Location.getCurrentPositionAsync({});
-                    handleChange('location', [
-                        location.coords.longitude,
-                        location.coords.latitude
-                    ]);
+                    const { latitude, longitude } = location.coords;
+                    handleChange('location', [longitude, latitude]);
+
+                    let reverseGeocode = await Location.reverseGeocodeAsync({ latitude, longitude });
+                    if (reverseGeocode.length > 0) {
+                        const loc = reverseGeocode[0];
+                        const fullAddress = `${loc.street || ''}, ${loc.district || ''}, ${loc.city || ''}, ${loc.subregion || ''}`;
+                        setAddress(fullAddress.replace(/^, |, $/g, '')); // Clean up leading/trailing commas
+                    }
+
                 } catch (error) {
                     console.error("Failed to get location:", error);
+                    setAddress("Failed to fetch location.");
                     setError(prev => ({ ...prev, location: true }));
                     Alert.alert("Location Error", "Failed to fetch location. Please ensure your location services are enabled.");
                 }
@@ -99,6 +115,7 @@ const SendNewReport = ({ visible, onClose }) => {
             images: [],
             location: null,
         });
+        setAddress("Fetching location...");
         setError({
             title: false,
             description: false,
@@ -234,7 +251,7 @@ const SendNewReport = ({ visible, onClose }) => {
                             </FormControlLabel>
                             <View style={styles.locationContainer}>
                                 <Text style={styles.locationText}>
-                                    {input.location ? `Long: ${input.location[0].toFixed(6)}, Lat: ${input.location[1].toFixed(6)}` : 'Fetching location...'}
+                                    {address}
                                 </Text>
                             </View>
                             {isError.location && <FormControlLabelText style={{ color: 'red', fontSize: 12, marginTop: 4 }}>Location is required.</FormControlLabelText>}

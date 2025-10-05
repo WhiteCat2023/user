@@ -201,7 +201,7 @@ export default function EditReport() {
               const docRef = doc(db, "allReports", id);
               await updateDoc(docRef, { images: remainingImages });
 
-              Alert.alert("Success", "Selected photos have been deleted.");
+              
             } catch (error) {
               console.error("Error deleting photos: ", error);
               Alert.alert(
