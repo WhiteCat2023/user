@@ -47,7 +47,7 @@ export function AuthProvider({ children }) {
 
     if (session) {
       if (!hasRedirected.current && authPaths.includes(currentPath)) {
-        router.replace("/(tabs)");
+        router.replace("/(tabs)/home");
         hasRedirected.current = true;
       }
     } else {
@@ -56,13 +56,13 @@ export function AuthProvider({ children }) {
         router.replace("/");
       }
     }
-  }, [session]);
+  }, [session, pathname]);
 
   const login = async (req) => {
     const res = await signIn(req);
     if (res.status === HttpStatus.OK) {
       // Login successful
-      router.replace("/(tabs)");
+      router.replace("/(tabs)/home");
     } else {
       Alert.alert("Login Failed", res.message);
     }
@@ -86,6 +86,7 @@ export function AuthProvider({ children }) {
       setSession(false);
       setUserDoc({});
       setRole(null);
+      router.replace("/");
     } else {
       Alert.alert("Logout Failed", res.message);
     }

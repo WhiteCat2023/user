@@ -44,7 +44,8 @@ export const uploadUserReport = async (req, user) => {
       images: urls,
       type: "report",
       read: false,
-      status: "pending"
+      status: "pending",
+      isNew: true,
     });
 
     return {

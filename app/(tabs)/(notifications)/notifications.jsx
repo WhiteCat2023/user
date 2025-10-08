@@ -7,11 +7,14 @@ import {
   RefreshControl,
   Text as RNText,
   SafeAreaView,
+  SectionList,
   StatusBar,
   TouchableOpacity,
   useWindowDimensions,
   View,
 } from "react-native";
+import * as Notifications from "expo-notifications";
+import { format, isToday, isYesterday, isThisWeek, isThisMonth } from "date-fns";
 
 import { Filter as FilterIcon } from "lucide-react-native";
 
@@ -19,9 +22,9 @@ import { getAllReportsAsNotifications } from "@/api/controller/report.controller
 import SearchBar from "@/components/inputs/searchbar/SearchBar";
 import { Box } from "@/components/ui/box";
 import { useAuth } from "@/context/AuthContext";
-import { format } from "date-fns";
+import ReportNotificationService from "../../../utils/ReportNotificationService";
 
-const Notifications = () => {
+const NotificationsScreen = () => {
   const router = useRouter();
   const { user } = useAuth();
 
@@ -39,20 +42,52 @@ const Notifications = () => {
   const { width } = useWindowDimensions();
   const isMobile = true; // ✅ always mobile in Expo Go
 
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    // Set up notifications permission
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+      }),
+    });
+
+    // Start listening to report updates
+    ReportNotificationService.listenToReportUpdates(user.uid, fetchNotifications);
+
+    // Clean up listener
+    return () => {
+      ReportNotificationService.stopListening();
+    };
+  }, [user]);
+
   // fetch data
   const fetchNotifications = async () => {
     setLoading(true);
     try {
       const result = await getAllReportsAsNotifications();
       if (result.status === 200) {
-        const reports = result.data.filter(
-          (r) =>
-            r.uid === user?.uid &&
-            (r.status?.toLowerCase() === "responded" ||
-              r.status?.toLowerCase() === "ignored")
-        );
+        const reports = result.data
+          .filter((r) => r.uid === user?.uid)
+          .sort((a, b) => {
+            const dateA = a.timestamp?.toDate
+              ? a.timestamp.toDate()
+              : new Date(a.timestamp);
+            const dateB = b.timestamp?.toDate
+              ? b.timestamp.toDate()
+              : new Date(b.timestamp);
+            return dateB.getTime() - dateA.getTime();
+          });
+
         setNotifications(reports);
         setFilteredNotifications(reports);
+
+        // Update badge count
+        await Notifications.setBadgeCountAsync(
+          reports.filter((r) => !r.isRead).length
+        );
       }
     } catch (error) {
       console.error("Fetch error:", error);
@@ -120,6 +155,42 @@ const Notifications = () => {
     }
   };
 
+  const groupNotificationsByDate = (notifications) => {
+    const grouped = notifications.reduce((groups, item) => {
+      const date = item.timestamp?.toDate
+        ? item.timestamp.toDate()
+        : new Date(item.timestamp);
+
+      let dateGroup;
+      if (isToday(date)) {
+        dateGroup = "Today";
+      } else if (isYesterday(date)) {
+        dateGroup = "Yesterday";
+      } else if (isThisWeek(date)) {
+        dateGroup = "This Week";
+      } else if (isThisMonth(date)) {
+        dateGroup = "This Month";
+      } else {
+        dateGroup = "Earlier";
+      }
+
+      if (!groups[dateGroup]) {
+        groups[dateGroup] = [];
+      }
+      groups[dateGroup].push(item);
+      return groups;
+    }, {});
+
+    return Object.entries(grouped).map(([title, data]) => ({
+      title,
+      data: data.sort((a, b) => {
+        const dateA = a.timestamp?.toDate ? a.timestamp.toDate() : new Date(a.timestamp);
+        const dateB = b.timestamp?.toDate ? b.timestamp.toDate() : new Date(b.timestamp);
+        return dateB.getTime() - dateA.getTime();
+      })
+    }));
+  };
+
   if (loading) {
     return (
       <Box className="flex-1 justify-center items-center">
@@ -160,120 +231,123 @@ const Notifications = () => {
 
           {/* Filter button */}
           <TouchableOpacity
-  className="w-10 h-10 items-center justify-center ml-2 rounded-md"
-  style={{
-    backgroundColor: "#D9E9DD", // same as page background
-    borderWidth: 2,
-    borderColor: "#064E3B", // dark green border
-  }}
-  onPress={() =>
-    setStatusFilter((prev) =>
-      prev === "responded" ? "ignored" : "responded"
-    )
-  }
->
-  <FilterIcon size={18} color="#1F2937" strokeWidth={2.5} /> 
-</TouchableOpacity>
+            className="w-10 h-10 items-center justify-center ml-2 rounded-md"
+            style={{
+              backgroundColor: "#D9E9DD", // same as page background
+              borderWidth: 2,
+              borderColor: "#064E3B", // dark green border
+            }}
+            onPress={() =>
+              setStatusFilter((prev) =>
+                prev === "responded" ? "ignored" : "responded"
+              )
+            }
+          >
+            <FilterIcon size={18} color="#1F2937" strokeWidth={2.5} />
+          </TouchableOpacity>
         </View>
       </View>
 
       {/* Notifications List */}
-      <FlatList
-        data={currentItems}
-        keyExtractor={(item) =>
-          item.id || item._id || Math.random().toString()
-        }
+      <SectionList
+        sections={groupNotificationsByDate(filteredNotifications)}
+        keyExtractor={(item) => item.id || item._id || Math.random().toString()}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 24 }}
+        renderSectionHeader={({ section: { title } }) => (
+          <View className="py-2 px-4 bg-[#D9E9DD]">
+            <RNText className="text-lg font-semibold text-gray-700">{title}</RNText>
+          </View>
+        )}
         renderItem={({ item }) => (
-  <View className="bg-white rounded-xl p-4 mb-4 shadow">
-    <View className="flex-row justify-between items-start">
-      {/* Left: Title + Date + Description */}
-      <View style={{ flex: 1, paddingRight: 8 }}>
-        <View className="flex-row items-center flex-nowrap">
-  {/* Title */}
-  <RNText
-    className="text-lg font-bold mr-2"
-    numberOfLines={1}
-    ellipsizeMode="tail"
-    style={{ maxWidth: "55%" }} // ✅ slightly smaller to give space for timestamp
-  >
-    {item.title || "Untitled Report"}
-  </RNText>
+          <View className="bg-white rounded-xl p-4 mb-4 shadow">
+            <View className="flex-row justify-between items-start">
+              {/* Left: Title + Date + Description */}
+              <View style={{ flex: 1, paddingRight: 8 }}>
+                <View className="flex-row items-center flex-nowrap">
+                  {/* Title */}
+                  <RNText
+                    className="text-lg font-bold mr-2"
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                    style={{ maxWidth: "55%" }} // ✅ slightly smaller to give space for timestamp
+                  >
+                    {item.title || "Untitled Report"}
+                  </RNText>
 
-  {/* Separator circle */}
-  <RNText className="text-gray-400 mx-1">•</RNText>
+                  {/* Separator circle */}
+                  <RNText className="text-gray-400 mx-1">•</RNText>
 
-  {/* Timestamp (truncate if too long) */}
-  <RNText
-    className="text-xs text-gray-500"
-    numberOfLines={1}
-    ellipsizeMode="tail"
-    style={{ maxWidth: "40%" }} // ✅ prevents wrapping below
-  >
-    {formatDate(item.timestamp)}
-  </RNText>
-</View>
+                  {/* Timestamp (truncate if too long) */}
+                  <RNText
+                    className="text-xs text-gray-500"
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                    style={{ maxWidth: "40%" }} // ✅ prevents wrapping below
+                  >
+                    {formatDate(item.timestamp)}
+                  </RNText>
+                </View>
 
-        {/* Description (1 line max + "Click to see more...") */}
-        <TouchableOpacity
-          onPress={() => router.push(`(tabs)/(reports)/${item.id}`)}
-          activeOpacity={0.7}
-        >
-          <RNText
-            className="text-sm text-gray-600 mt-2"
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >
-            {item.description || "No description"}
-          </RNText>
+                {/* Description (1 line max + "Click to see more...") */}
+                <TouchableOpacity
+                  onPress={() => router.push(`(tabs)/(reports)/${item.id}`)}
+                  activeOpacity={0.7}
+                >
+                  <RNText
+                    className="text-sm text-gray-600 mt-2"
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {item.description || "No description"}
+                  </RNText>
 
-          {item.description && item.description.length > 60 && (
-            <RNText className="text-sm text-gray-400">
-              Click to see more...
-            </RNText>
-          )}
-        </TouchableOpacity>
-      </View>
+                  {item.description && item.description.length > 60 && (
+                    <RNText className="text-sm text-gray-400">
+                      Click to see more...
+                    </RNText>
+                  )}
+                </TouchableOpacity>
+              </View>
 
-      {/* Right: Tier + Status (inside card, no overlap) */}
-      <View className="items-end justify-between">
-        <RNText
-  className=" text-lg font-semibold"
-  style={{
-    color:
-      item.tier?.toLowerCase() === "low"
-        ? "#16A34A" // green-600
-        : item.tier?.toLowerCase() === "medium"
-        ? "#EAB308" // yellow-500
-        : item.tier?.toLowerCase() === "high"
-        ? "#F97316" // orange-500
-        : item.tier?.toLowerCase() === "emergency"
-        ? "#DC2626" // red-600
-        : "#6B7280", // gray-500 (default if tier is missing/unknown)
-  }}
->
-  {(item.tier || "N/A").toUpperCase()}
-</RNText>
-        <RNText
-  className="mt-10 text-lg font-bold"
-  style={{
-    color:
-      item.status?.toLowerCase() === "responded"
-        ? "#16A34A" // green-600
-        : item.status?.toLowerCase() === "ignored"
-        ? "#DC2626" // red-600
-        : "#374151", // default gray-700
-  }}
->
-  {(item.status || "N/A").toUpperCase()}
-</RNText>
-      </View>
-    </View>
-  </View>
-)}
+              {/* Right: Tier + Status (inside card, no overlap) */}
+              <View className="items-end justify-between">
+                <RNText
+                  className=" text-lg font-semibold"
+                  style={{
+                    color:
+                      item.tier?.toLowerCase() === "low"
+                        ? "#16A34A" // green-600
+                        : item.tier?.toLowerCase() === "medium"
+                        ? "#EAB308" // yellow-500
+                        : item.tier?.toLowerCase() === "high"
+                        ? "#F97316" // orange-500
+                        : item.tier?.toLowerCase() === "emergency"
+                        ? "#DC2626" // red-600
+                        : "#6B7280", // gray-500 (default if tier is missing/unknown)
+                  }}
+                >
+                  {(item.tier || "N/A").toUpperCase()}
+                </RNText>
+                <RNText
+                  className="mt-10 text-lg font-bold"
+                  style={{
+                    color:
+                      item.status?.toLowerCase() === "responded"
+                        ? "#16A34A" // green-600
+                        : item.status?.toLowerCase() === "ignored"
+                        ? "#DC2626" // red-600
+                        : "#374151", // default gray-700
+                  }}
+                >
+                  {(item.status || "N/A").toUpperCase()}
+                </RNText>
+              </View>
+            </View>
+          </View>
+        )}
         ListEmptyComponent={
           <View className="items-center mt-12">
             <RNText>No reports found</RNText>
@@ -284,4 +358,4 @@ const Notifications = () => {
   );
 };
 
-export default Notifications;
+export default NotificationsScreen;
