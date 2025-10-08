@@ -318,7 +318,7 @@ const ForumsScreen = () => {
             const isOwner = item.authorId === user?.uid;
             return (
               <Card className="p-4 mb-4 rounded-xl border border-gray-300 bg-white">
-                <TouchableOpacity onPress={() => router.push(`/(tabs)/(home)/${item.id}`)}>
+                <TouchableOpacity onPress={() => router.push(`/(tabs)/(index)/${item.id}`)}>
                   <Box className="flex-row items-center mb-2">
                     <Text className="text-lg font-bold">{item.title}</Text>
                     <Text className="mx-2 text-gray-400">•</Text>
@@ -340,7 +340,7 @@ const ForumsScreen = () => {
                     <Text className="ml-1 text-gray-700">{item.likesCount || 0} Likes</Text>
                   </TouchableOpacity>
 
-                  <TouchableOpacity onPress={() => router.push(`/(tabs)/(home)/${item.id}`)} className="flex-row items-center">
+                  <TouchableOpacity onPress={() => router.push(`/(tabs)/(index)/${item.id}`)} className="flex-row items-center">
                     <MessageCircle size={18} />
                     <Text className="ml-1 text-gray-700">{item.commentsCount || 0} Comments</Text>
                   </TouchableOpacity>
