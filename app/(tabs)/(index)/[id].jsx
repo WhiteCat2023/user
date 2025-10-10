@@ -104,6 +104,7 @@ const ForumDetails = () => {
   const [bookmarked, setBookmarked] = useState(false)
   const [filterMenuOpen, setFilterMenuOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [likingItems, setLikingItems] = useState(new Set())
 
 // Comment filter state
 const [commentFilter, setCommentFilter] = useState("Newest") // "Newest" | "Oldest"
@@ -233,14 +234,29 @@ const [commentFilter, setCommentFilter] = useState("Newest") // "Newest" | "Olde
 
   useEffect(() => {
     if (!user) return
-    const unsubs = allComments.map((c) => {
-      const likeRef = doc(db, "forums", id, "comments", c.id, "likes", user.uid)
-      return onSnapshot(likeRef, snap => {
-        setCommentLikes(prev => { const updated = { ...prev, [c.id]: snap.exists() }; saveLikesToStorage("commentLikes", updated); return updated })
+    const unsubs = []
+
+    // Function to get all items (comments and replies)
+    const getAllItems = () => {
+      const items = [...allComments]
+      Object.values(commentMap).forEach(replies => {
+        items.push(...replies)
       })
+      return items
+    }
+
+    const allItems = getAllItems()
+    allItems.forEach((item) => {
+      let path = ["comments", item.id]
+      if (item.parentId) path = ["comments", item.parentId, "replies", item.id]
+      const likeRef = doc(db, "forums", id, ...path, "likes", user.uid)
+      const unsub = onSnapshot(likeRef, snap => {
+        setCommentLikes(prev => { const updated = { ...prev, [item.id]: snap.exists() }; saveLikesToStorage("commentLikes", updated); return updated })
+      })
+      unsubs.push(unsub)
     })
     return () => unsubs.forEach(u => u())
-  }, [allComments, id, user])
+  }, [allComments, commentMap, id, user])
 
   // --- Add comment ---
   const addComment = async () => {
@@ -274,10 +290,13 @@ const [commentFilter, setCommentFilter] = useState("Newest") // "Newest" | "Olde
 
   // --- Toggle comment/reply like (optimistic update) ---
   const toggleCommentLike = async (item) => {
-    if (!user) return
+    if (!user || likingItems.has(item.id)) return
 
     const itemId = item.id
     const currentlyLiked = commentLikes[itemId] || false
+
+    // Add to liking set
+    setLikingItems(prev => new Set(prev).add(itemId))
 
     // --- Optimistic UI update ---
     setCommentLikes(prev => {
@@ -305,6 +324,13 @@ const [commentFilter, setCommentFilter] = useState("Newest") // "Newest" | "Olde
       console.error("Error updating like:", err)
       // Revert UI if there is an error
       setCommentLikes(prev => ({ ...prev, [itemId]: currentlyLiked }))
+    } finally {
+      // Remove from liking set
+      setLikingItems(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(itemId)
+        return newSet
+      })
     }
   }
 
@@ -453,6 +479,7 @@ const [commentFilter, setCommentFilter] = useState("Newest") // "Newest" | "Olde
           <Box className="flex-row items-center mt-1">
             <TouchableOpacity
               onPress={() => toggleCommentLike(item)}
+              disabled={likingItems.has(item.id)}
               className="flex-row items-center mr-4"
             >
               <Heart

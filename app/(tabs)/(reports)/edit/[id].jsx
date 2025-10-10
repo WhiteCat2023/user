@@ -53,6 +53,8 @@ export default function EditReport() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [tierSaving, setTierSaving] = useState(false);
+  const [addingPhotos, setAddingPhotos] = useState(false);
+  const [deletingPhotos, setDeletingPhotos] = useState(false);
   const [showTierModal, setShowTierModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
@@ -184,7 +186,7 @@ export default function EditReport() {
           text: "Delete",
           style: "destructive",
           onPress: async () => {
-            setSaving(true);
+            setDeletingPhotos(true);
             try {
               // Delete from Firebase Storage
               for (const imageUrl of selectedPhotosForDeletion) {
@@ -209,7 +211,7 @@ export default function EditReport() {
                 "Failed to delete photos. Please try again."
               );
             } finally {
-              setSaving(false);
+              setDeletingPhotos(false);
               setIsDeleteMode(false);
               setSelectedPhotosForDeletion([]);
             }
@@ -278,15 +280,15 @@ export default function EditReport() {
     if (permissionResult.granted === false) {
       Alert.alert(
         "Permission Required",
-        "You need to allow access to your photos to add an image."
+        "You need to allow access to your photos to add images."
       );
       return;
     }
 
     const pickerResult = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
+      allowsEditing: false,
+      allowsMultipleSelection: true,
       quality: 1,
     });
 
@@ -294,10 +296,10 @@ export default function EditReport() {
       return;
     }
 
-    setSaving(true);
+    setAddingPhotos(true);
     try {
-      const { uri } = pickerResult.assets[0];
-      const newImageUrls = await uploadImagesToFirebase([{ uri }], `reports/${id}`);
+      const uris = pickerResult.assets.map(asset => ({ uri: asset.uri }));
+      const newImageUrls = await uploadImagesToFirebase(uris, `reports/${id}`);
 
       if (newImageUrls && newImageUrls.length > 0) {
         const updatedImages = [...images, ...newImageUrls];
@@ -307,13 +309,13 @@ export default function EditReport() {
         await updateDoc(docRef, { images: updatedImages });
 
       } else {
-        throw new Error("Image upload returned no URL.");
+        throw new Error("Image upload returned no URLs.");
       }
     } catch (error) {
-      console.error("Error adding photo: ", error);
-      Alert.alert("Error", "Failed to add photo. Please try again.");
+      console.error("Error adding photos: ", error);
+      Alert.alert("Error", "Failed to add photos. Please try again.");
     } finally {
-      setSaving(false);
+      setAddingPhotos(false);
     }
   };
 
@@ -606,20 +608,32 @@ export default function EditReport() {
             <View className="flex-row mt-4">
               <TouchableOpacity
                 onPress={handleAddPhoto}
-                className="flex-row items-center bg-[#16A34A] p-2 rounded-lg mr-2"
+                disabled={addingPhotos}
+                className={`flex-row items-center p-2 rounded-lg mr-2 ${addingPhotos ? 'bg-gray-400' : 'bg-[#16A34A]'}`}
               >
-                <Link size={16} color="white" />
-                <Text className="text-white ml-1 font-semibold">Add Photo</Text>
+                {addingPhotos ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Link size={16} color="white" />
+                )}
+                <Text className="text-white ml-1 font-semibold">
+                  {addingPhotos ? 'Adding...' : 'Add Photo'}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleDeletePhoto}
+                disabled={deletingPhotos}
                 className={`flex-row items-center p-2 rounded-lg ${
-                  isDeleteMode ? "bg-red-600" : "bg-red-500"
+                  isDeleteMode ? "bg-red-600" : deletingPhotos ? 'bg-gray-400' : "bg-red-500"
                 }`}
               >
-                <Trash2 size={16} color="white" />
+                {deletingPhotos ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Trash2 size={16} color="white" />
+                )}
                 <Text className="text-white ml-1 font-semibold">
-                  {isDeleteMode ? "Confirm Deletion" : "Delete Photo"}
+                  {deletingPhotos ? 'Deleting...' : isDeleteMode ? "Confirm Deletion" : "Delete Photo"}
                 </Text>
               </TouchableOpacity>
             </View>

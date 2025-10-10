@@ -151,7 +151,7 @@ export default function TabLayout() {
           }}
         />
       </Tabs>
-      {currentTab !== '(ai)' && (
+      {currentTab !== '(ai)' && currentTab !== '[id]' && (
         <Animated.View 
           style={[
             styles.fab, 

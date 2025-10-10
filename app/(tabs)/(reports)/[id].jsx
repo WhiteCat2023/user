@@ -9,10 +9,12 @@ import {
 } from "@/components/ui/popover";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { doc, getDoc } from "firebase/firestore";
-import { ChevronLeft, Info, X } from "lucide-react-native";
-import { useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight, Info, X } from "lucide-react-native";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Dimensions,
+  FlatList,
   Image,
   Modal,
   Text as RNText,
@@ -20,7 +22,7 @@ import {
   ScrollView,
   TouchableOpacity,
   View,
-  useWindowDimensions,
+  useWindowDimensions
 } from "react-native";
 
 export default function ReportDetails() {
@@ -32,6 +34,12 @@ export default function ReportDetails() {
   const [selectedImage, setSelectedImage] = useState(null);
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const [showTierInfo, setShowTierInfo] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const carouselRef = useRef(null);
+  const screenWidth = Dimensions.get('window').width;
+  // Calculate how many images are visible at once
+  const imagesPerPage = 2;
+  const itemWidth = (screenWidth - 80) / imagesPerPage;
 
   const openImageModal = (uri) => {
     setSelectedImage(uri);
@@ -41,6 +49,28 @@ export default function ReportDetails() {
   const closeImageModal = () => {
     setModalVisible(false);
     setSelectedImage(null);
+  };
+
+
+  // Snap to pairs of images
+  const navigateCarousel = (direction) => {
+    if (!report?.images || report.images.length === 0) return;
+    let maxIndex = Math.max(0, report.images.length - imagesPerPage);
+    let newIndex = currentImageIndex;
+    if (direction === 'next') {
+      newIndex = Math.min(currentImageIndex + 1, maxIndex);
+    } else {
+      newIndex = Math.max(currentImageIndex - 1, 0);
+    }
+    setCurrentImageIndex(newIndex);
+    carouselRef.current?.scrollToOffset({ offset: newIndex * itemWidth, animated: true });
+  };
+
+  const handleScroll = (event) => {
+    if (!report || !report.images || report.images.length === 0) return;
+    const contentOffset = event.nativeEvent.contentOffset;
+    const index = Math.round(contentOffset.x / itemWidth);
+    setCurrentImageIndex(Math.max(0, Math.min(index, report.images.length - imagesPerPage)));
   };
 
   useEffect(() => {
@@ -109,12 +139,12 @@ export default function ReportDetails() {
           </TouchableOpacity>
 
           {/* Report Title */}
-          <RNText className="text-3xl font-bold mb-2">{report.title}</RNText>
+          <RNText className="text-3xl font-bold mb-2">{report?.title || 'Loading...'}</RNText>
 
           {/* Report Description */}
           <View className="bg-gray-100 p-3 rounded-lg mb-6">
             <RNText className="text-base text-gray-700">
-              {report.description}
+              {report?.description || 'Loading description...'}
             </RNText>
           </View>
 
@@ -127,14 +157,14 @@ export default function ReportDetails() {
               className="text-2xl font-bold"
               style={{
                 color:
-                  report.status?.toLowerCase() === "pending"
+                  report?.status?.toLowerCase() === "pending"
                     ? "#EAB308" // Yellow for Pending
-                    : report.status?.toLowerCase() === "responded"
+                    : report?.status?.toLowerCase() === "responded"
                     ? "#16A34A" // Green for Responded
                     : "#DC2626", // Red for Ignored
               }}
             >
-              {report.status?.toUpperCase()}
+              {report?.status?.toUpperCase() || 'LOADING'}
             </RNText>
           </View>
 
@@ -148,7 +178,7 @@ export default function ReportDetails() {
             </RNText>
             <View className="flex-row items-center">
               <View className="flex-1 border border-gray-300 rounded-md p-3 bg-gray-50 mr-3">
-                <RNText className="text-base">{report.tier}</RNText>
+                <RNText className="text-base">{report?.tier || 'Loading...'}</RNText>
               </View>
               <Popover
                 isOpen={showTierInfo}
@@ -213,24 +243,70 @@ export default function ReportDetails() {
 
           {/* Attached Files */}
           <View>
-            <RNText className="text-lg font-bold mb-2">Files Attached:</RNText>
-            <View className="flex-row flex-wrap">
-              {report.images && report.images.length > 0 ? (
-                report.images.map((uri, index) => (
+            <RNText className="text-lg font-bold mb-3">Files Attached:</RNText>
+            {report?.images && report.images.length > 0 ? (
+              <View style={styles.carouselContainer}>
+                <FlatList
+                  ref={carouselRef}
+                  data={report.images}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  onScroll={handleScroll}
+                  keyExtractor={(item, index) => index.toString()}
+                  contentContainerStyle={styles.carouselContent}
+                  renderItem={({ item, index }) => (
+                    <TouchableOpacity
+                      style={[styles.imageItem, index === report.images.length - 1 ? { marginRight: 0 } : {}]}
+                      onPress={() => openImageModal(item)}
+                    >
+                      <View style={styles.imageWrapper}>
+                        <Image
+                          source={{ uri: item }}
+                          style={styles.carouselImage}
+                          resizeMode="cover"
+                        />
+                        <View style={styles.imageOverlay}>
+                          <View style={styles.imageIcon}>
+                            <View style={styles.mountainIcon}>
+                              <View style={styles.mountain1} />
+                              <View style={styles.mountain2} />
+                              <View style={styles.sun} />
+                            </View>
+                          </View>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                  getItemLayout={(_, index) => ({ length: itemWidth, offset: itemWidth * index, index })}
+                  initialScrollIndex={0}
+                  extraData={currentImageIndex}
+                />
+                {/* Left Arrow */}
+                {currentImageIndex > 0 && (
                   <TouchableOpacity
-                    key={index}
-                    onPress={() => openImageModal(uri)}
+                    style={{ ...styles.nextButton, left: -8, right: undefined, transform: [{ rotate: '180deg' }], zIndex: 2 }}
+                    onPress={() => navigateCarousel('prev')}
                   >
-                    <Image
-                      source={{ uri }}
-                      className="w-24 h-24 rounded-md mr-2 mb-2 bg-gray-200"
-                    />
+                    <ChevronRight size={20} color="#666" />
                   </TouchableOpacity>
-                ))
-              ) : (
-                <RNText className="text-gray-500">No files attached.</RNText>
-              )}
-            </View>
+                )}
+                {/* Right Arrow */}
+                {currentImageIndex < report.images.length - imagesPerPage && (
+                  <TouchableOpacity
+                    style={styles.nextButton}
+                    onPress={() => navigateCarousel('next')}
+                  >
+                    <ChevronRight size={20} color="#666" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            ) : (
+              <View style={styles.noFilesContainer}>
+                <RNText className="text-gray-500">
+                  {report ? 'No files attached.' : 'Loading files...'}
+                </RNText>
+              </View>
+            )}
           </View>
         </View>
       </ScrollView>
@@ -266,3 +342,72 @@ export default function ReportDetails() {
     </SafeAreaView>
   );
 }
+
+const styles = {
+  carouselContainer: {
+    position: 'relative',
+    backgroundColor: 'transparent',
+  },
+  carouselContent: {
+    paddingHorizontal: 0,
+  },
+  imageItem: {
+    width: (Dimensions.get('window').width - 100) / 2, // Show 2 images side by side
+    marginRight: 12,
+  },
+  imageWrapper: {
+    position: 'relative',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#333',
+    overflow: 'hidden',
+    aspectRatio: 1, // Square aspect ratio
+  },
+  carouselImage: {
+    width: '100%',
+    height: '100%',
+  },
+  imageOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  
+  nextButton: {
+    position: 'absolute',
+    right: -8,
+    top: '50%',
+    marginTop: -16,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  noFilesContainer: {
+    padding: 20,
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#e0e0e0',
+    borderStyle: 'dashed',
+  },
+};
