@@ -176,7 +176,7 @@ const Bookmark = () => {
               return (
                 <Card className="p-4 mb-4 rounded-xl border border-gray-300 bg-white shadow-md">
                   <TouchableOpacity
-                    onPress={() => router.push(`/(tabs)/(home)/${item.id}`)}
+                    onPress={() => router.push(`/(tabs)/(index)/${item.id}`)}
                   >
                     <View className="flex-row justify-between items-start">
                       <View className="flex-1">

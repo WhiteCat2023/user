@@ -4,6 +4,8 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
+  Easing,
   FlatList,
   Image,
   Modal,
@@ -57,6 +59,9 @@ const ForumsScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredDiscussions, setFilteredDiscussions] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [likingPosts, setLikingPosts] = useState(new Set());
+  const [likeAnimations, setLikeAnimations] = useState({});
+  const [commentAnimations, setCommentAnimations] = useState({});
 
   // Update current time every minute
   useEffect(() => {
@@ -76,6 +81,26 @@ const ForumsScreen = () => {
     };
     if (user) loadCachedLikes();
   }, [user]);
+
+  // Initialize animation values for new discussions
+  useEffect(() => {
+    const newLikeAnimations = {};
+    const newCommentAnimations = {};
+    discussions.forEach(discussion => {
+      if (!likeAnimations[discussion.id]) {
+        newLikeAnimations[discussion.id] = new Animated.Value(1);
+      }
+      if (!commentAnimations[discussion.id]) {
+        newCommentAnimations[discussion.id] = new Animated.Value(1);
+      }
+    });
+    if (Object.keys(newLikeAnimations).length > 0) {
+      setLikeAnimations(prev => ({ ...prev, ...newLikeAnimations }));
+    }
+    if (Object.keys(newCommentAnimations).length > 0) {
+      setCommentAnimations(prev => ({ ...prev, ...newCommentAnimations }));
+    }
+  }, [discussions]);
 
   const saveLikesToCache = async (likes) => {
     try {
@@ -210,27 +235,84 @@ const ForumsScreen = () => {
 
   const toggleLike = async (forum) => {
     if (!user) return;
-    const forumRef = doc(db, "forums", forum.id);
-    const likeRef = doc(db, "forums", forum.id, "likes", user.uid);
-    const userLikeRef = doc(db, "userLikes", user.uid, "forums", forum.id);
-
-    const likeDoc = await getDoc(likeRef);
-    const updatedLikes = { ...userLikes };
-
-    if (likeDoc.exists()) {
-      await deleteDoc(likeRef);
-      await deleteDoc(userLikeRef);
-      await updateDoc(forumRef, { likesCount: increment(-1) });
-      delete updatedLikes[forum.id];
-    } else {
-      await setDoc(likeRef, { userId: user.uid });
-      await setDoc(userLikeRef, { forumId: forum.id });
-      await updateDoc(forumRef, { likesCount: increment(1) });
-      updatedLikes[forum.id] = true;
+    
+    // Prevent spam clicking - check if this post is already being processed
+    if (likingPosts.has(forum.id)) return;
+    
+    // Trigger animation
+    const animationValue = likeAnimations[forum.id];
+    if (animationValue) {
+      Animated.sequence([
+        Animated.timing(animationValue, {
+          toValue: 1.2,
+          duration: 100,
+          easing: Easing.out(Easing.back(1.5)),
+          useNativeDriver: true,
+        }),
+        Animated.timing(animationValue, {
+          toValue: 1,
+          duration: 200,
+          easing: Easing.out(Easing.elastic(1)),
+          useNativeDriver: true,
+        }),
+      ]).start();
     }
+    
+    // Add this post to the processing set
+    setLikingPosts(prev => new Set([...prev, forum.id]));
+    
+    try {
+      const forumRef = doc(db, "forums", forum.id);
+      const likeRef = doc(db, "forums", forum.id, "likes", user.uid);
+      const userLikeRef = doc(db, "userLikes", user.uid, "forums", forum.id);
 
-    setUserLikes(updatedLikes);
-    saveLikesToCache(updatedLikes);
+      const likeDoc = await getDoc(likeRef);
+      const updatedLikes = { ...userLikes };
+
+      if (likeDoc.exists()) {
+        await deleteDoc(likeRef);
+        await deleteDoc(userLikeRef);
+        await updateDoc(forumRef, { likesCount: increment(-1) });
+        delete updatedLikes[forum.id];
+      } else {
+        await setDoc(likeRef, { userId: user.uid });
+        await setDoc(userLikeRef, { forumId: forum.id });
+        await updateDoc(forumRef, { likesCount: increment(1) });
+        updatedLikes[forum.id] = true;
+      }
+
+      setUserLikes(updatedLikes);
+      saveLikesToCache(updatedLikes);
+    } catch (error) {
+      console.error("Error toggling like:", error);
+    } finally {
+      // Remove this post from the processing set
+      setLikingPosts(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(forum.id);
+        return newSet;
+      });
+    }
+  };
+
+  const animateComment = (forumId) => {
+    const animationValue = commentAnimations[forumId];
+    if (animationValue) {
+      Animated.sequence([
+        Animated.timing(animationValue, {
+          toValue: 1.2,
+          duration: 100,
+          easing: Easing.out(Easing.back(1.5)),
+          useNativeDriver: true,
+        }),
+        Animated.timing(animationValue, {
+          toValue: 1,
+          duration: 100,
+          easing: Easing.out(Easing.elastic(1)),
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
   };
 
   const [fontsLoaded] = useFonts({
@@ -316,6 +398,8 @@ const ForumsScreen = () => {
           renderItem={({ item }) => {
             const liked = userLikes[item.id] || false;
             const isOwner = item.authorId === user?.uid;
+            const likeAnimationValue = likeAnimations[item.id] || new Animated.Value(1);
+            const commentAnimationValue = commentAnimations[item.id] || new Animated.Value(1);
             return (
               <Card className="p-4 mb-4 rounded-xl border border-gray-300 bg-white">
                 <TouchableOpacity onPress={() => router.push(`/(tabs)/(index)/${item.id}`)}>
@@ -335,13 +419,26 @@ const ForumsScreen = () => {
 
                 {/* Likes + Comments */}
                 <Box className="flex-row items-center">
-                  <TouchableOpacity onPress={() => toggleLike(item)} className="flex-row items-center mr-6">
-                    <Heart size={18} color={liked ? "red" : "black"} fill={liked ? "red" : "transparent"} />
+                  <TouchableOpacity 
+                    onPress={() => toggleLike(item)} 
+                    className="flex-row items-center mr-6"
+                  >
+                    <Animated.View style={{ transform: [{ scale: likeAnimationValue }] }}>
+                      <Heart size={18} color={liked ? "red" : "black"} fill={liked ? "red" : "transparent"} />
+                    </Animated.View>
                     <Text className="ml-1 text-gray-700">{item.likesCount || 0} Likes</Text>
                   </TouchableOpacity>
 
-                  <TouchableOpacity onPress={() => router.push(`/(tabs)/(index)/${item.id}`)} className="flex-row items-center">
-                    <MessageCircle size={18} />
+                  <TouchableOpacity 
+                    onPress={() => {
+                      animateComment(item.id);
+                      router.push(`/(tabs)/(index)/${item.id}`);
+                    }} 
+                    className="flex-row items-center"
+                  >
+                    <Animated.View style={{ transform: [{ scale: commentAnimationValue }] }}>
+                      <MessageCircle size={18} />
+                    </Animated.View>
                     <Text className="ml-1 text-gray-700">{item.commentsCount || 0} Comments</Text>
                   </TouchableOpacity>
                 </Box>

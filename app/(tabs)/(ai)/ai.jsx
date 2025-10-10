@@ -2,6 +2,8 @@ import { useAuth } from "@/context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
 import {
+  Animated,
+  Easing,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -14,16 +16,29 @@ import {
 } from "react-native";
 
 export default function AIChatbot() {
-  const [messages, setMessages] = useState([
-    { sender: "bot", text: "Hi! I'm NicolAI 🤖. How can I help you today?" },
-  ]);
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [showInitialTyping, setShowInitialTyping] = useState(true);
   const scrollViewRef = useRef(null);
 
   // inside AIChatbot
 const { user } = useAuth(); // Add this at the top of the component
+
+  // Show initial typing animation and then the welcome message
+  useEffect(() => {
+    // Start with typing indicator
+    setTimeout(() => {
+      setMessages([{ sender: "bot", text: "..." }]);
+      
+      // After 2 seconds, replace with actual welcome message
+      setTimeout(() => {
+        setMessages([{ sender: "bot", text: "Hi! I'm NicolAI 🤖. How can I help you today?" }]);
+        setShowInitialTyping(false);
+      }, 2000);
+    }, 500); // Small delay before showing typing
+  }, []);
 
   useEffect(() => {
     if (scrollViewRef.current) {
@@ -43,7 +58,7 @@ const { user } = useAuth(); // Add this at the top of the component
     setMessages((prev) => [...prev, typingMessage]);
 
     try {
-      const N8N_WEBHOOK_URL = "http://192.168.1.23:5678/webhook-test/de96b7cc-d472-4bf4-b534-1de06cb85947";
+      const N8N_WEBHOOK_URL = "http://192.168.1.18:5678/webhook/de96b7cc-d472-4bf4-b534-1de06cb85947";
 
       const response = await fetch(
         N8N_WEBHOOK_URL,
@@ -195,13 +210,219 @@ const { user } = useAuth(); // Add this at the top of the component
   );
 }
 
-const TypingIndicator = ({ typingDotColor }) => (
-  <View style={styles.typingContainer}>
-    <Text style={[styles.typingDot, { color: typingDotColor }]}>•</Text>
-    <Text style={[styles.typingDot, { color: typingDotColor }]}>•</Text>
-    <Text style={[styles.typingDot, { color: typingDotColor }]}>•</Text>
-  </View>
-);
+const TypingIndicator = ({ typingDotColor }) => {
+  const dot1 = useRef(new Animated.Value(0)).current;
+  const dot2 = useRef(new Animated.Value(0)).current;
+  const dot3 = useRef(new Animated.Value(0)).current;
+  const waveAnimation = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const createWaveAnimation = () => {
+      // Wave animation that flows through all dots
+      Animated.loop(
+        Animated.sequence([
+          Animated.parallel([
+            // First wave - dot 1 leads
+            Animated.sequence([
+              Animated.timing(dot1, {
+                toValue: 1,
+                duration: 300,
+                easing: Easing.out(Easing.sin),
+                useNativeDriver: true,
+              }),
+              Animated.timing(dot1, {
+                toValue: 0,
+                duration: 400,
+                easing: Easing.in(Easing.sin),
+                useNativeDriver: true,
+              }),
+            ]),
+            
+            // Second wave - dot 2 follows with slight delay
+            Animated.sequence([
+              Animated.delay(100),
+              Animated.timing(dot2, {
+                toValue: 1,
+                duration: 300,
+                easing: Easing.out(Easing.sin),
+                useNativeDriver: true,
+              }),
+              Animated.timing(dot2, {
+                toValue: 0,
+                duration: 400,
+                easing: Easing.in(Easing.sin),
+                useNativeDriver: true,
+              }),
+            ]),
+            
+            // Third wave - dot 3 follows last
+            Animated.sequence([
+              Animated.delay(200),
+              Animated.timing(dot3, {
+                toValue: 1,
+                duration: 300,
+                easing: Easing.out(Easing.sin),
+                useNativeDriver: true,
+              }),
+              Animated.timing(dot3, {
+                toValue: 0,
+                duration: 400,
+                easing: Easing.in(Easing.sin),
+                useNativeDriver: true,
+              }),
+            ]),
+          ]),
+          
+          // Small pause before next wave
+          Animated.delay(200),
+        ])
+      ).start();
+
+      // Background wave effect
+      Animated.loop(
+        Animated.timing(waveAnimation, {
+          toValue: 1,
+          duration: 2000,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        })
+      ).start();
+    };
+
+    createWaveAnimation();
+  }, []);
+
+  return (
+    <View style={styles.typingContainer}>
+      {/* Background wave effect */}
+      <Animated.View 
+        style={[
+          styles.waveBackground,
+          {
+            opacity: waveAnimation.interpolate({
+              inputRange: [0, 0.5, 1],
+              outputRange: [0.1, 0.3, 0.1],
+            }),
+            transform: [
+              {
+                scaleX: waveAnimation.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.8, 1.2],
+                }),
+              },
+            ],
+          }
+        ]}
+      />
+      
+      {/* Animated dots with wave effect */}
+      <Animated.Text 
+        style={[
+          styles.typingDot, 
+          { 
+            color: typingDotColor,
+            opacity: dot1.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0.3, 1],
+            }),
+            transform: [
+              {
+                scale: dot1.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.6, 1.4],
+                }),
+              },
+              {
+                translateY: dot1.interpolate({
+                  inputRange: [0, 0.5, 1],
+                  outputRange: [0, -8, 0],
+                }),
+              },
+              {
+                rotate: dot1.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['0deg', '15deg'],
+                }),
+              },
+            ],
+          }
+        ]}
+      >
+        •
+      </Animated.Text>
+      
+      <Animated.Text 
+        style={[
+          styles.typingDot, 
+          { 
+            color: typingDotColor,
+            opacity: dot2.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0.3, 1],
+            }),
+            transform: [
+              {
+                scale: dot2.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.6, 1.4],
+                }),
+              },
+              {
+                translateY: dot2.interpolate({
+                  inputRange: [0, 0.5, 1],
+                  outputRange: [0, -8, 0],
+                }),
+              },
+              {
+                rotate: dot2.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['0deg', '-15deg'],
+                }),
+              },
+            ],
+          }
+        ]}
+      >
+        •
+      </Animated.Text>
+      
+      <Animated.Text 
+        style={[
+          styles.typingDot, 
+          { 
+            color: typingDotColor,
+            opacity: dot3.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0.3, 1],
+            }),
+            transform: [
+              {
+                scale: dot3.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.6, 1.4],
+                }),
+              },
+              {
+                translateY: dot3.interpolate({
+                  inputRange: [0, 0.5, 1],
+                  outputRange: [0, -8, 0],
+                }),
+              },
+              {
+                rotate: dot3.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['0deg', '15deg'],
+                }),
+              },
+            ],
+          }
+        ]}
+      >
+        •
+      </Animated.Text>
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
@@ -229,6 +450,27 @@ const styles = StyleSheet.create({
   },
   input: { flex: 1, fontSize: 16, paddingVertical: 6, paddingHorizontal: 10 },
   sendBtn: { padding: 8, borderRadius: 50, justifyContent: "center", alignItems: "center" },
-  typingContainer: { flexDirection: "row", alignItems: "center", padding: 4 },
-  typingDot: { fontSize: 18, marginHorizontal: 2 },
+  typingContainer: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    padding: 1,
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  typingDot: { 
+    fontSize: 13, 
+    marginHorizontal: 2,
+    fontWeight: 'bold',
+  },
+  waveBackground: {
+    position: 'absolute',
+    width: 60,
+    height: 10,
+    backgroundColor: 'rgba(52, 122, 66, 0.1)',
+    borderRadius: 10,
+    top: '50%',
+    left: '50%',
+    marginLeft: -30,
+    marginTop: -10,
+  },
 });

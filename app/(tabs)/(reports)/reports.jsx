@@ -62,6 +62,21 @@ export default function Reports() {
           list = list.filter((r) => r.uid === user.uid);
         }
 
+        // Sort to bring "pending" status reports to the top
+        list.sort((a, b) => {
+          const aIsPending = a.status?.toLowerCase() === "pending";
+          const bIsPending = b.status?.toLowerCase() === "pending";
+
+          if (aIsPending && !bIsPending) {
+            return -1; // a (pending) comes first
+          }
+          if (!aIsPending && bIsPending) {
+            return 1; // b (pending) comes first
+          }
+          // For items with the same status, maintain the original timestamp sort
+          return 0;
+        });
+
         setReports(list);
         setFilteredReports(list);
         setLoading(false);
