@@ -7,6 +7,7 @@ import {
   PopoverBody,
   PopoverContent,
 } from "@/components/ui/popover";
+import { useFonts } from "expo-font";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { doc, getDoc } from "firebase/firestore";
 import { ChevronLeft, ChevronRight, Info, X } from "lucide-react-native";
@@ -72,6 +73,17 @@ export default function ReportDetails() {
     const index = Math.round(contentOffset.x / itemWidth);
     setCurrentImageIndex(Math.max(0, Math.min(index, report.images.length - imagesPerPage)));
   };
+
+  const [fontsLoaded] = useFonts({
+        Pacifico: require("../../../assets/fonts/Pacifico-Regular.ttf"),
+        SpaceMono: require("../../../assets/fonts/SpaceMono-Regular.ttf"),
+        Roboto: require("../../../assets/fonts/Roboto-Bold.ttf"),
+        Poppins: require("../../../assets/fonts/Poppins-Bold.ttf"),
+        DM: require("../../../assets/fonts/DMSans-Regular.ttf"),
+        DMBold: require("../../../assets/fonts/DMSans-Bold.ttf"),
+      });
+    
+      if (!fontsLoaded) return null;
 
   useEffect(() => {
     if (id) {
@@ -139,22 +151,22 @@ export default function ReportDetails() {
           </TouchableOpacity>
 
           {/* Report Title */}
-          <RNText className="text-3xl font-bold mb-2">{report?.title || 'Loading...'}</RNText>
+          <RNText className="text-3xl font-[DMBold] mb-2">{report?.title || 'Loading...'}</RNText>
 
           {/* Report Description */}
           <View className="bg-gray-100 p-3 rounded-lg mb-6">
-            <RNText className="text-base text-gray-700">
+            <RNText className="text-base text-gray-700 font-[DM]">
               {report?.description || 'Loading description...'}
             </RNText>
           </View>
 
           {/* Status */}
           <View className="items-center mb-6">
-            <RNText className="text-lg font-bold">
+            <RNText className="text-lg font-[Roboto]">
               THIS REPORT IS CURRENTLY
             </RNText>
             <RNText
-              className="text-2xl font-bold"
+              className="text-2xl font-[Roboto]"
               style={{
                 color:
                   report?.status?.toLowerCase() === "pending"
@@ -170,10 +182,10 @@ export default function ReportDetails() {
 
           {/* Tier List */}
           <View className="mb-6">
-            <RNText className="text-lg font-bold mb-1">
+            <RNText className="text-xl font-[DMBold]">
               Report's Tier list
             </RNText>
-            <RNText className="text-sm text-gray-500 mb-2">
+            <RNText className="text-xs text-gray-500 mb-2 font-[DM]">
               How urgent is the report?
             </RNText>
             <View className="flex-row items-center">
@@ -243,7 +255,7 @@ export default function ReportDetails() {
 
           {/* Attached Files */}
           <View>
-            <RNText className="text-lg font-bold mb-3">Files Attached:</RNText>
+            <RNText className="text-xl mb-3 font-[DMBold]">Files Attached:</RNText>
             {report?.images && report.images.length > 0 ? (
               <View style={styles.carouselContainer}>
                 <FlatList

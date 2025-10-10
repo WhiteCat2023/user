@@ -1,7 +1,8 @@
-import { db } from "@/api/config/firebase.config"
-import { useAuth } from "@/context/AuthContext"
-import AsyncStorage from "@react-native-async-storage/async-storage"
-import { useLocalSearchParams, useRouter } from "expo-router"
+import { db } from "@/api/config/firebase.config";
+import { useAuth } from "@/context/AuthContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFonts } from "expo-font";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   addDoc,
   collection,
@@ -15,9 +16,9 @@ import {
   serverTimestamp,
   setDoc,
   updateDoc,
-} from "firebase/firestore"
-import { ArrowLeft, Bookmark, Heart, MessageCircle, MoreVertical, Share2 } from "lucide-react-native"
-import { useEffect, useState } from "react"
+} from "firebase/firestore";
+import { ArrowLeft, Bookmark, Heart, MessageCircle, MoreVertical, Share2 } from "lucide-react-native";
+import { useEffect, useState } from "react";
 import {
   Alert,
   Image,
@@ -27,16 +28,16 @@ import {
   TextInput,
   TouchableOpacity,
   View
-} from "react-native"
+} from "react-native";
 
 // ✅ Gluestack UI
-import SearchBar from "@/components/inputs/searchbar/SearchBar"
-import { Box } from "@/components/ui/box"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Heading } from "@/components/ui/heading"
-import { Text } from "@/components/ui/text"
-import { Reply } from "lucide-react-native"
+import SearchBar from "@/components/inputs/searchbar/SearchBar";
+import { Box } from "@/components/ui/box";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Text } from "@/components/ui/text";
+import { Reply } from "lucide-react-native";
+
 
 // ⏱️ Helper: format timestamp into relative time
 const timeAgo = (date, now) => {
@@ -161,6 +162,17 @@ const [commentFilter, setCommentFilter] = useState("Newest") // "Newest" | "Olde
       Alert.alert("Error", "Could not share forum. Please try again.")
     }
   }
+
+  const [fontsLoaded] = useFonts({
+      Pacifico: require("../../../assets/fonts/Pacifico-Regular.ttf"),
+      SpaceMono: require("../../../assets/fonts/SpaceMono-Regular.ttf"),
+      Roboto: require("../../../assets/fonts/Roboto-Bold.ttf"),
+      Poppins: require("../../../assets/fonts/Poppins-Bold.ttf"),
+      DM: require("../../../assets/fonts/DMSans-Regular.ttf"),
+      DMBold: require("../../../assets/fonts/DMSans-Bold.ttf"),
+    });
+  
+    if (!fontsLoaded) return null;
 
   // --- Local Storage Helpers ---
   const loadLikesFromStorage = async () => {
@@ -389,7 +401,8 @@ const [commentFilter, setCommentFilter] = useState("Newest") // "Newest" | "Olde
                 style={{ width: 30, height: 30, borderRadius: 15, marginRight: 6 }}
               />
               <Text bold>{item.authorName}</Text>
-              <Text className="text-gray-400 text-sm ml-2">
+              <Text className="mx-2 text-gray-400">•</Text>
+              <Text className="text-gray-400 text-xs font-[DM]">
                 {item.timestamp?.toDate ? timeAgo(item.timestamp.toDate(), now) : "..."}
               </Text>
             </Box>
@@ -408,9 +421,9 @@ const [commentFilter, setCommentFilter] = useState("Newest") // "Newest" | "Olde
 
           {/* Dropdown menu */}
           {menuVisible?.[item.id] && (
-            <Box className="absolute top-8 right-3 bg-white shadow-md rounded-md z-10">
+            <Box className="absolute top-8 right-3 bg-white shadow-md rounded-md z-10 font-[DM]">
               <TouchableOpacity
-                className="px-4 py-2"
+                className="px-4 py-2 font-[DM]"
                 onPress={() => {
                   if (item.parentId) setEditingReply(prev => ({ ...prev, [item.id]: true }))
                   else setEditingComment(item.id)
@@ -420,7 +433,7 @@ const [commentFilter, setCommentFilter] = useState("Newest") // "Newest" | "Olde
                 <Text>Edit</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                className="px-4 py-2"
+                className="px-4 py-2 font-[DM]"
                 onPress={() => deleteItem(item)}
               >
                 <Text>Delete</Text>
@@ -432,7 +445,7 @@ const [commentFilter, setCommentFilter] = useState("Newest") // "Newest" | "Olde
           {parentAuthor && (
             <Box className="flex-row items-center mb-1">
               <Reply size={14} color="#555" />
-              <Text className="ml-1 text-sm text-gray-600">
+              <Text className="ml-1 text-sm text-gray-600 font-[DM]">
                 Replying to @{parentAuthor}
               </Text>
             </Box>
@@ -450,7 +463,7 @@ const [commentFilter, setCommentFilter] = useState("Newest") // "Newest" | "Olde
               className="border border-gray-300 rounded-md p-2 mb-2"
             />
           ) : (
-            <Text className="mb-2">{item.content}</Text>
+            <Text className="mb-2 font-[DM] text-black">{item.content}</Text>
           )}
 
           {/* Edit / Save buttons */}
@@ -584,11 +597,11 @@ if (commentFilter === "Newest") {
                 <ArrowLeft size={24} color="black" />
               </TouchableOpacity>
 
-              <Heading size="4xl" className="mb-1">FORUMS</Heading>
+              <Text size="5xl" className="text-black mb-4 font-[Poppins]">FORUMS</Text>
 
               {/* ✅ Title row with Bookmark + Share */}
               <Box className="flex-row items-center justify-between mb-4">
-                <Text className="text-2xl font-semibold flex-1 mr-2">
+                <Text className="text-2xl font-[DMBold] text-black flex-1 mr-2">
                   {forum.title || "Untitled Discussion"}
                 </Text>
 
@@ -607,28 +620,29 @@ if (commentFilter === "Newest") {
                 </Box>
               </Box>
 
-              <Box className="flex-row items-center mb-2">
+              <Box className="flex-row items-center mb-2 text-black font-[DMBold]">
                 <Image source={{ uri: forum.authorPhoto }} style={{ width: 35, height: 35, borderRadius: 18, marginRight: 8 }} />
                 <Text bold>{forum.authorName}</Text>
-                <Text className="text-gray-500 ml-2 text-sm">
+                <Text className="mx-2 text-gray-400">•</Text>
+                <Text className="text-gray-500 font-[DM] text-xs">
                   {forum.timestamp?.toDate ? timeAgo(forum.timestamp.toDate(), now) : "..."}
                 </Text>
               </Box>
 
-              <Text className="text-base text-gray-700 mb-5">{forum.content}</Text>
+              <Text className="text-base text-black font-[DM] mb-5">{forum.content}</Text>
 
               <Box className="flex-row items-center justify-between border-b border-gray-300 pb-3 mb-5">
                 <TouchableOpacity onPress={() => {}} className="flex-row items-center">
                   <Heart size={20} color={userLikes[id] ? "red" : "black"} fill={userLikes[id] ? "red" : "transparent"} />
-                  <Text className="ml-2">{forum.likesCount || 0} Likes</Text>
+                  <Text className="ml-2 font-[DM] text-black">{forum.likesCount || 0} Likes</Text>
                 </TouchableOpacity>
                 <Box className="flex-row items-center">
                   <MessageCircle size={20} />
-                  <Text className="ml-2">{forum.commentsCount || 0} Comments</Text>
+                  <Text className="ml-2 font-[DM] text-black">{forum.commentsCount || 0} Comments</Text>
                 </Box>
               </Box>
 
-              <Heading size="xl" className="mb-2">Comments</Heading>
+              <Text size="2xl" className="mb-2 text-black font-[DMBold]">Comments</Text>
               <TextInput
                 placeholder="Write your insights about the discussion..."
                 value={newComment}
@@ -646,7 +660,7 @@ if (commentFilter === "Newest") {
 
               {filteredComments.map(c => renderCommentThread(c))}
             </>
-          ) : <Text className="text-center text-gray-500 py-10">No results found for "{searchQuery}"</Text>}
+          ) : <Text className="text-center text-gray-500 py-10 font-[DM]">No results found for "{searchQuery}"</Text>}
         </Box>
       </ScrollView>
       {copied && (

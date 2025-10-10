@@ -368,7 +368,7 @@ export default function EditReport() {
                     <Text className="text-sm font-bold ml-1">BACK</Text>
                 </TouchableOpacity>
                 <Button onPress={handleSaveChanges} disabled={saving} className="bg-[#16A34A] rounded-lg w-30 h-8">
-                    {saving ? <ActivityIndicator color="#fff" /> : <ButtonText>Save Changes</ButtonText>}
+                    {saving ? <ActivityIndicator color="#fff" /> : <ButtonText className="text-white text-sm font-[DM]">Save Changes</ButtonText>}
                 </Button>
             </View>
           {/* Title */}
@@ -377,7 +377,7 @@ export default function EditReport() {
               ref={titleInputRef}
               value={title}
               onChangeText={setTitle}
-              className="text-3xl font-bold flex-1"
+              className="text-3xl font-[DMBold] flex-1"
               editable={isEditingTitle}
               placeholder="Report Title"
             />
@@ -394,7 +394,7 @@ export default function EditReport() {
                 className="flex-row items-center bg-[#16A34A] p-2 rounded-lg ml-2"
               >
                 <FileEdit size={16} color="white" />
-                <Text className="text-white ml-1 font-semibold whitespace-nowrap">Edit Title</Text>
+                <Text className="text-white ml-1 text-sm font-[DM] whitespace-nowrap">Edit Title</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -406,7 +406,7 @@ export default function EditReport() {
               value={description}
               onChangeText={setDescription}
               multiline
-              className="text-base text-gray-700"
+              className="text-base text-black font-[DM]"
               style={{ height: 150, textAlignVertical: "top" }}
               editable={isEditingDescription}
               placeholder="Report Description"
@@ -438,11 +438,11 @@ export default function EditReport() {
 
           {/* Status */}
           <View className="items-center mb-6">
-            <Text className="text-lg font-bold">
+            <Text className="text-lg font-[Roboto]">
               THIS REPORT IS CURRENTLY
             </Text>
             <Text
-              className="text-2xl font-bold"
+              className="text-2xl font-[Roboto]"
               style={{
                 color:
                   report.status?.toLowerCase() === "pending"
@@ -458,10 +458,10 @@ export default function EditReport() {
 
           {/* Tier */}
           <View className="mb-6">
-            <Text className="text-lg font-bold mb-1">
+            <Text className="text-xl mb-1 font-[DMBold]">
               Edit Report's Tierlist
             </Text>
-            <Text className="text-sm text-gray-500 mb-2">
+            <Text className="text-sm text-gray-500 mb-2 font-[DM]">
               How urgent is the report?
             </Text>
             <View className="flex-row items-center">
@@ -471,7 +471,7 @@ export default function EditReport() {
                   className="border border-gray-300 rounded-md p-3 bg-gray-50 flex-row items-center justify-between mr-3"
                   disabled={tierSaving}
                 >
-                  <Text className={tier ? "text-black" : "text-gray-400"}>
+                  <Text className={tier ? "text-black font-[DM]" : "text-gray-400 font-[DM]"}>
                     {tier || "Select report tier"}
                   </Text>
                   <ChevronDown size={20} color="gray" />
@@ -573,7 +573,7 @@ export default function EditReport() {
 
           {/* Photos */}
           <View className="mb-4">
-            <Text className="text-lg font-bold mb-2">Photos</Text>
+            <Text className="text-xl font-[DMBold] mb-2">Photos</Text>
             <View className="flex-row flex-wrap">
               {images.map((imageUrl, index) => (
                 <TouchableOpacity
@@ -616,7 +616,7 @@ export default function EditReport() {
                 ) : (
                   <Link size={16} color="white" />
                 )}
-                <Text className="text-white ml-1 font-semibold">
+                <Text className="text-white ml-1 font-[DMBold]">
                   {addingPhotos ? 'Adding...' : 'Add Photo'}
                 </Text>
               </TouchableOpacity>
@@ -632,7 +632,7 @@ export default function EditReport() {
                 ) : (
                   <Trash2 size={16} color="white" />
                 )}
-                <Text className="text-white ml-1 font-semibold">
+                <Text className="text-white ml-1 font-[DMBold]">
                   {deletingPhotos ? 'Deleting...' : isDeleteMode ? "Confirm Deletion" : "Delete Photo"}
                 </Text>
               </TouchableOpacity>

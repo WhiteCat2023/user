@@ -1,8 +1,9 @@
+import { format, isThisMonth, isThisWeek, isToday, isYesterday } from "date-fns";
+import * as Notifications from "expo-notifications";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  FlatList,
   Image,
   RefreshControl,
   Text as RNText,
@@ -11,10 +12,8 @@ import {
   StatusBar,
   TouchableOpacity,
   useWindowDimensions,
-  View,
+  View
 } from "react-native";
-import * as Notifications from "expo-notifications";
-import { format, isToday, isYesterday, isThisWeek, isThisMonth } from "date-fns";
 
 import { Filter as FilterIcon } from "lucide-react-native";
 
@@ -258,7 +257,7 @@ const NotificationsScreen = () => {
         contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 24 }}
         renderSectionHeader={({ section: { title } }) => (
           <View className="py-2 px-4 bg-[#D9E9DD]">
-            <RNText className="text-lg font-semibold text-gray-700">{title}</RNText>
+            <RNText className="text-lg font-[DMBold] text-gray-700">{title}</RNText>
           </View>
         )}
         renderItem={({ item }) => (
@@ -269,7 +268,7 @@ const NotificationsScreen = () => {
                 <View className="flex-row items-center flex-nowrap">
                   {/* Title */}
                   <RNText
-                    className="text-lg font-bold mr-2"
+                    className="text-lg mr-2 font-[DMBold]"
                     numberOfLines={1}
                     ellipsizeMode="tail"
                     style={{ maxWidth: "55%" }} // ✅ slightly smaller to give space for timestamp
@@ -282,7 +281,7 @@ const NotificationsScreen = () => {
 
                   {/* Timestamp (truncate if too long) */}
                   <RNText
-                    className="text-xs text-gray-500"
+                    className="text-xs text-gray-500 font-[DM]"
                     numberOfLines={1}
                     ellipsizeMode="tail"
                     style={{ maxWidth: "40%" }} // ✅ prevents wrapping below
@@ -297,7 +296,7 @@ const NotificationsScreen = () => {
                   activeOpacity={0.7}
                 >
                   <RNText
-                    className="text-sm text-gray-600 mt-2"
+                    className="text-sm text-gray-600 mt-2 font-[DM]"
                     numberOfLines={1}
                     ellipsizeMode="tail"
                   >
@@ -305,7 +304,7 @@ const NotificationsScreen = () => {
                   </RNText>
 
                   {item.description && item.description.length > 60 && (
-                    <RNText className="text-sm text-gray-400">
+                    <RNText className="text-sm text-gray-400 font-[DM]">
                       Click to see more...
                     </RNText>
                   )}
@@ -315,7 +314,7 @@ const NotificationsScreen = () => {
               {/* Right: Tier + Status (inside card, no overlap) */}
               <View className="items-end justify-between">
                 <RNText
-                  className=" text-lg font-semibold"
+                  className=" text-lg font-[DMBold]"
                   style={{
                     color:
                       item.tier?.toLowerCase() === "low"
@@ -332,7 +331,7 @@ const NotificationsScreen = () => {
                   {(item.tier || "N/A").toUpperCase()}
                 </RNText>
                 <RNText
-                  className="mt-10 text-lg font-bold"
+                  className="mt-10 text-lg font-[DMBold]"
                   style={{
                     color:
                       item.status?.toLowerCase() === "responded"

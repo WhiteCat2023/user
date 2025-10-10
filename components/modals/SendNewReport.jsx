@@ -1,3 +1,4 @@
+import { useFonts } from "expo-font";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from 'expo-location';
 import { ChevronDown, InfoIcon, X } from 'lucide-react-native';
@@ -7,7 +8,6 @@ import { uploadUserReport } from '../../api/controller/storage.controller';
 import { Button, ButtonText } from '../../components/ui/button';
 import { Divider } from '../../components/ui/divider';
 import { FormControl, FormControlHelper, FormControlHelperText, FormControlLabel, FormControlLabelText } from '../../components/ui/form-control';
-import { Heading } from '../../components/ui/heading';
 import { HStack } from '../../components/ui/hstack';
 import { Icon } from '../../components/ui/icon';
 import { Image } from '../../components/ui/image';
@@ -164,6 +164,17 @@ const SendNewReport = ({ visible, onClose }) => {
         }
     };
 
+    const [fontsLoaded] = useFonts({
+            Pacifico: require("@/assets/fonts/Pacifico-Regular.ttf"),
+            SpaceMono: require("@/assets/fonts/SpaceMono-Regular.ttf"),
+            Roboto: require("@/assets/fonts/Roboto-Bold.ttf"),
+            Poppins: require("@/assets/fonts/Poppins-Bold.ttf"),
+            DM: require("@/assets/fonts/DMSans-Regular.ttf"),
+            DMBold: require("@/assets/fonts/DMSans-Bold.ttf"),
+          });
+        
+          if (!fontsLoaded) return null;
+
     const handleSuccessModalClose = () => {
         setShowSuccessModal(false);
         handleOnClose();
@@ -186,10 +197,8 @@ const SendNewReport = ({ visible, onClose }) => {
                 <View style={styles.modalView}>
                     <ScrollView contentContainerStyle={{ alignItems: 'center' }} style={{width: '100%'}}>
                         <View style={styles.header}>
-                            <Heading style={styles.modalTitle}>SUBMIT A REPORT</Heading>
-                            <Pressable onPress={handleOnClose} style={styles.closeButton}>
-                                <Icon as={X} size="md" />
-                            </Pressable>
+                            <Text style={styles.modalTitle}>SUBMIT A REPORT</Text>
+                    
                         </View>
                         <Divider style={styles.divider} />
 
@@ -445,7 +454,7 @@ const styles = StyleSheet.create({
     },
     modalTitle: {
         textAlign: 'center',
-        fontWeight: 'bold',
+        fontFamily: 'Poppins',
         flex: 1,
         fontSize: 24,
     },
@@ -459,7 +468,8 @@ const styles = StyleSheet.create({
         marginBottom: 15,
     },
     formLabel: {
-        fontWeight: 'bold',
+        fontFamily: 'DMBold',
+        fontSize: 16,
         marginBottom: 5,
     },
     locationContainer: {
@@ -514,6 +524,8 @@ const styles = StyleSheet.create({
     },
     uploadButton: {
         backgroundColor: '#28a745',
+        fontFamily: 'DMBold',
+        fontSize: 16,
     },
     actionButtons: {
         flexDirection: 'row',
@@ -523,6 +535,8 @@ const styles = StyleSheet.create({
     },
     submitButton: {
         backgroundColor: '#fd7e14', // Orange
+        fontFamily: 'DMBold',
+        fontSize: 16,
         flex: 1,
         marginRight: 2,
     },

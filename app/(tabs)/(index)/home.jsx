@@ -320,6 +320,8 @@ const ForumsScreen = () => {
     SpaceMono: require("../../../assets/fonts/SpaceMono-Regular.ttf"),
     Roboto: require("../../../assets/fonts/Roboto-Bold.ttf"),
     Poppins: require("../../../assets/fonts/Poppins-Bold.ttf"),
+    DM: require("../../../assets/fonts/DMSans-Regular.ttf"),
+    DMBold: require("../../../assets/fonts/DMSans-Bold.ttf"),
   });
 
   if (!fontsLoaded) return null;
@@ -353,10 +355,10 @@ const ForumsScreen = () => {
       <Box className="bg-white rounded-2xl p-4 shadow-sm">
         <Box className="flex-row items-center justify-between mb-4">
           <Box>
-            <Text size="4xl" className="font-[Poppins] mb-1">
+            <Text size="4xl" className="text-black font-[Poppins] mb-1">
               FORUMS
             </Text>
-            <Text className="text-gray-600">{discussions.length} Discussions</Text>
+            <Text className="text-black font-[DM]">{discussions.length} Discussions</Text>
           </Box>
 
           {/* Controls */}
@@ -374,19 +376,19 @@ const ForumsScreen = () => {
 
             <TouchableOpacity
               onPress={() => setFilter("newest")}
-              className={`px-2 py-1 border border-green-600 rounded-l-md mt-11 ${
+              className={`px-2 py-1 border border-green-600 rounded-l-md mt-11 font-[DM] ${
                 filter === "newest" ? "bg-green-600" : "bg-white"
               }`}
             >
-              <Text className={filter === "newest" ? "text-white" : "text-black"}>Newest</Text>
+              <Text className={filter === "newest" ? "text-white" : "text-black font-[DM]"}>Newest</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setFilter("ongoing")}
-              className={`px-2 py-1 border border-green-600 rounded-r-md mt-11 ${
+              className={`px-2 py-1 border border-green-600 rounded-r-md mt-11 font-[DM] ${
                 filter === "ongoing" ? "bg-green-600" : "bg-white"
               }`}
             >
-              <Text className={filter === "ongoing" ? "text-white" : "text-black"}>Ongoing</Text>
+              <Text className={filter === "ongoing" ? "text-white" : "text-black font-[DM]"}>Ongoing</Text>
             </TouchableOpacity>
           </Box>
         </Box>
@@ -401,18 +403,18 @@ const ForumsScreen = () => {
             const likeAnimationValue = likeAnimations[item.id] || new Animated.Value(1);
             const commentAnimationValue = commentAnimations[item.id] || new Animated.Value(1);
             return (
-              <Card className="p-4 mb-4 rounded-xl border border-gray-300 bg-white">
+              <Card className="p-4 mb-4 rounded-xl border border-green-600 bg-white">
                 <TouchableOpacity onPress={() => router.push(`/(tabs)/(index)/${item.id}`)}>
                   <Box className="flex-row items-center mb-2">
-                    <Text className="text-lg font-bold">{item.title}</Text>
+                    <Text className="text-xl text-black font-[DMBold]">{item.title}</Text>
                     <Text className="mx-2 text-gray-400">•</Text>
-                    <Text className="text-xs text-gray-500">
+                    <Text className="text-xs text-gray-500 font-[DM]">
                       {item.timestamp?.toDate
                         ? formatTimeAgo(item.timestamp.toDate(), currentTime)
                         : "..."}
                     </Text>
                   </Box>
-                  <Text numberOfLines={2} className="text-gray-700 mb-3">
+                  <Text numberOfLines={2} className="text-black mb-3 font-[DM]">
                     {item.content}
                   </Text>
                 </TouchableOpacity>
@@ -459,13 +461,13 @@ const ForumsScreen = () => {
                   setNewDiscussion({ title: "", description: "" });
                 }}
               >
-                <Text className="text-sm font-bold text-black mb-2">BACK</Text>
+                <Text className="text-xs font-[Poppins] text-black mb-2">BACK</Text>
               </TouchableOpacity>
 
-              <Text className="text-xl font-[Poppins] text-center mb-2">START A DISCUSSION</Text>
+              <Text className="text-xl text-black font-[Poppins] text-center mb-2">START A DISCUSSION</Text>
               <View className="border-t border-gray-300 mb-4" />
 
-              <Text className="font-semibold text-black mb-2">Discussion Title</Text>
+              <Text className="font-[DMBold] text-black mb-2">Discussion Title</Text>
               <TextInput
                 placeholder="Write your report title here."
                 value={newDiscussion.title}
@@ -473,7 +475,7 @@ const ForumsScreen = () => {
                 className="bg-gray-200 rounded-md px-4 py-3 mb-4 text-gray-800"
               />
 
-              <Text className="font-semibold text-black mb-2">Report Description</Text>
+              <Text className="font-[DMBold] text-black mb-2">Report Description</Text>
               <TextInput
                 placeholder="Write your report description here."
                 value={newDiscussion.description}
@@ -492,7 +494,7 @@ const ForumsScreen = () => {
                   {isSaving ? (
                     <ActivityIndicator color="white" />
                   ) : (
-                    <Text className="text-white font-semibold">Confirm</Text>
+                    <Text className="text-white font-[DMBold]">Confirm</Text>
                   )}
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -505,7 +507,7 @@ const ForumsScreen = () => {
                   }}
                   disabled={isSaving}
                 >
-                  <Text className="text-white font-semibold">Cancel</Text>
+                  <Text className="text-white font-[DMBold]">Cancel</Text>
                 </TouchableOpacity>
               </View>
             </View>

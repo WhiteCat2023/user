@@ -249,7 +249,7 @@ export default function Reports() {
                 <View style={{ flex: 1, paddingRight: 8 }}>
                   <View style={{ flexDirection: "row", alignItems: "center" }}>
                     <RNText
-                      className="text-xl font-bold text-black mr-1"
+                      className="text-xl font-[DMBold] text-black mr-1"
                       numberOfLines={1}
                       ellipsizeMode="tail"
                       style={{ flexShrink: 1 }}
@@ -259,7 +259,7 @@ export default function Reports() {
 
                     {/* Tier Color Mapping */}
                     <RNText
-                      className="text-lg font-bold"
+                      className="text-lg font-[DMBold]"
                       style={{
                         color:
                           item.tier?.toLowerCase() === "low"
@@ -276,11 +276,11 @@ export default function Reports() {
                       • {item.tier || "N/A"}
                     </RNText>
                   </View>
-                  <RNText className="text-xs text-gray-500">
+                  <RNText className="text-xs text-gray-500 font-[DM]">
                     {formatDate(item.timestamp)}
                   </RNText>
                   <RNText
-                    className="text-sm text-black mt-2"
+                    className="text-sm text-black mt-2 font-[DM]"
                     numberOfLines={2}
                     ellipsizeMode="tail"
                   >
@@ -294,7 +294,7 @@ export default function Reports() {
                         router.push(`/(tabs)/(reports)/${item.id}`)
                       }
                     >
-                      <RNText className=" text-gray-500 text-sm">
+                      <RNText className=" text-gray-500 text-sm font-[DM]">
                         Click to see more...
                       </RNText>
                     </TouchableOpacity>
@@ -312,7 +312,7 @@ export default function Reports() {
                         onPress={() =>
                           router.push(`/(tabs)/(reports)/edit/${item.id}`)
                         }
-                        className="w-7 h-7 mr-2 items-center justify-center rounded-md bg-green-500"
+                        className="w-7 h-7 mr-2 items-center justify-center rounded-md bg-green-500 font-[DMBold]"
                       >
                         <Edit3 size={16} color="#fff" />
                       </TouchableOpacity>
