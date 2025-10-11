@@ -336,17 +336,17 @@ export default function EditReport() {
   return (
     <GluestackUIProvider>
       <SafeAreaView className="flex-1 bg-[#D9E9DD]">
-        <View className="px-4 pt-5 pb-3">
+        <View className="px-4 pt-3 pb-3">
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center">
               <Image
                 source={require("@/assets/images/ariba-logo.png")}
-                style={{ width: 40, height: 40, marginRight: 8 }}
+                style={{ width: 80, height: 80, marginRight: 8 }}
               />
-              <Text className="text-2xl font-bold">NOTIFICATION</Text>
+              <Text className="text-3xl font-[Poppins]">REPORTS</Text>
             </View>
           </View>
-          <View className="flex-row justify-end mt-2 -mb-3">
+          <View className="flex-row justify-end  -mb-3">
             <Box className="w-48 h-12">
               <SearchBar
                 value={searchQuery}

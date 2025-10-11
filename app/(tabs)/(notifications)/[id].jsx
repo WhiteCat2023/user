@@ -1,11 +1,11 @@
 import { db } from "@/api/config/firebase.config";
 import { Box } from "@/components/ui/box";
 import {
-  Popover,
-  PopoverArrow,
-  PopoverBackdrop,
-  PopoverBody,
-  PopoverContent,
+    Popover,
+    PopoverArrow,
+    PopoverBackdrop,
+    PopoverBody,
+    PopoverContent,
 } from "@/components/ui/popover";
 import { useFonts } from "expo-font";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -13,20 +13,20 @@ import { doc, getDoc } from "firebase/firestore";
 import { ChevronLeft, ChevronRight, Info, X } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Dimensions,
-  FlatList,
-  Image,
-  Modal,
-  Text as RNText,
-  SafeAreaView,
-  ScrollView,
-  TouchableOpacity,
-  View,
-  useWindowDimensions
+    ActivityIndicator,
+    Dimensions,
+    FlatList,
+    Image,
+    Modal,
+    Text as RNText,
+    SafeAreaView,
+    ScrollView,
+    TouchableOpacity,
+    View,
+    useWindowDimensions
 } from "react-native";
 
-export default function ReportDetails() {
+export default function NotificationReportDetails() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const [report, setReport] = useState(null);
@@ -133,7 +133,7 @@ export default function ReportDetails() {
               resizeMode="contain"
             />
             <RNText className="text-3xl font-[Poppins] text-black">
-              REPORTS
+              NOTIFICATION
             </RNText>
           </View>
         </View>
@@ -370,9 +370,9 @@ const styles = {
   imageWrapper: {
     position: 'relative',
     backgroundColor: '#f0f0f0',
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#fff',
+    borderColor: '#333',
     overflow: 'hidden',
     aspectRatio: 1, // Square aspect ratio
   },
