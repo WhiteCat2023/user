@@ -292,7 +292,7 @@ const NotificationsScreen = () => {
 
                 {/* Description (1 line max + "Click to see more...") */}
                 <TouchableOpacity
-                  onPress={() => router.push(`(tabs)/(reports)/${item.id}`)}
+                  onPress={() => router.push(`(tabs)/(notifications)/notificationID/${item.id}`)}
                   activeOpacity={0.7}
                 >
                   <RNText
