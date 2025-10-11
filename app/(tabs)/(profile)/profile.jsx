@@ -6,8 +6,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useFonts } from "expo-font";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import { EmailAuthProvider, getAuth, reauthenticateWithCredential, updateProfile } from "firebase/auth";
-import { doc, updateDoc } from "firebase/firestore";
+import { deleteUser, EmailAuthProvider, getAuth, reauthenticateWithCredential, updateProfile } from "firebase/auth";
+import { deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { Check, Eye, EyeOff, LogOut, Pencil, Upload, X } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
@@ -42,6 +42,12 @@ export default function Profile() {
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Add new states
+const [showDeleteModal, setShowDeleteModal] = useState(false);
+const [isDeleting, setIsDeleting] = useState(false);
+const [showDeleteSuccessModal, setShowDeleteSuccessModal] = useState(false);
+
 
 
   const [fontsLoaded] = useFonts({
@@ -86,6 +92,41 @@ export default function Profile() {
       alert(`Error: ${error.message}`);
     }
   };
+
+
+const handleDeleteAccount = async () => {
+  const auth = getAuth();
+  const currentUser = auth.currentUser;
+
+  try {
+    setIsDeleting(true);
+
+    // Delete user Firestore document
+    const userRef = doc(db, "users", currentUser.uid);
+    await deleteDoc(userRef);
+
+    // Delete from Firebase Authentication
+    await deleteUser(currentUser);
+
+    // Show success modal
+    setShowDeleteModal(false);
+    setShowDeleteSuccessModal(true);
+
+    // Wait briefly before logout & redirect
+    setTimeout(() => {
+      logout();
+      router.replace("/");
+    }, 2500);
+  } catch (error) {
+    console.error("Error deleting account:", error);
+    Alert.alert("Error", "Failed to delete account. Try again later.");
+  } finally {
+    setIsDeleting(false);
+  }
+};
+
+
+
 
   const handleSaveInformation = async () => {
     if (!firstName.trim() || !lastName.trim()) {
@@ -370,9 +411,13 @@ export default function Profile() {
                 If you want to permanently delete this account and all of its
                 data, you can do so below by clicking the "Delete Button".
               </Text>
-              <TouchableOpacity className="bg-red-500 mt-4 px-4 py-3 rounded-lg items-center">
-                <Text className="text-white font-bold">Delete Account</Text>
-              </TouchableOpacity>
+              <TouchableOpacity
+  onPress={() => setShowDeleteModal(true)}
+  className="bg-red-500 mt-4 px-4 py-3 rounded-lg items-center"
+>
+  <Text className="text-white font-bold">Delete Account</Text>
+</TouchableOpacity>
+
             </View>
 
             <View className="border-t border-gray-200 mt-6 pt-4">
@@ -607,6 +652,131 @@ export default function Profile() {
           </View>
         </View>
       </Modal>
+      {/* Account Deletion Modal */}
+{/* DELETE ACCOUNT CONFIRMATION MODAL */}
+<Modal
+  animationType="fade"
+  transparent={true}
+  visible={showDeleteModal}
+  onRequestClose={() => setShowDeleteModal(false)}
+>
+  <View className="flex-1 justify-center items-center bg-black/50">
+    <View
+      className="bg-white w-11/12 max-w-sm rounded-2xl p-6 items-center shadow-lg"
+      style={{
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 6,
+        elevation: 8,
+      }}
+    >
+      {/* Close Button (top-right X) */}
+      <TouchableOpacity
+        className="absolute top-4 right-4"
+        onPress={() => setShowDeleteModal(false)}
+      >
+        <X size={24} color="black" />
+      </TouchableOpacity>
+
+      {/* Title */}
+      <Text
+        className="text-3xl font-extrabold text-center mb-4"
+        style={{ fontFamily: "Poppins-Bold" }}
+      >
+        ACCOUNT DELETION
+      </Text>
+
+      {/* Delete Icon */}
+      <Image
+        source={require("../../../assets/images/delete-icon.png")} // 👈 make sure the image path matches your project
+        style={{
+          width: 80,
+          height: 80,
+          resizeMode: "contain",
+          marginVertical: 10,
+        }}
+      />
+
+      {/* Confirmation Text */}
+      <Text
+        className="text-center text-base mt-2 mb-6 text-gray-700"
+        style={{ fontFamily: "Poppins-Regular" }}
+      >
+        Are you sure you want to{" "}
+        <Text className="font-bold">Delete</Text> your account?
+      </Text>
+
+      {/* Buttons */}
+      <View className="flex-row w-full justify-between">
+        <TouchableOpacity
+          onPress={handleDeleteAccount}
+          disabled={isDeleting}
+          className="flex-1 py-3 rounded-xl mr-2 items-center"
+          style={{
+            backgroundColor: "#ef4444", // red
+            shadowColor: "#ef4444",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.4,
+            shadowRadius: 8,
+            elevation: 5,
+          }}
+        >
+          <Text
+            className="text-white font-bold text-lg"
+            style={{ fontFamily: "Poppins-SemiBold" }}
+          >
+            {isDeleting ? "Deleting..." : "Delete Account"}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => setShowDeleteModal(false)}
+          className="flex-1 py-3 rounded-xl ml-2 items-center"
+          style={{
+            backgroundColor: "#22c55e", // green
+            shadowColor: "#22c55e",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.4,
+            shadowRadius: 8,
+            elevation: 5,
+          }}
+        >
+          <Text
+            className="text-white font-bold text-lg"
+            style={{ fontFamily: "Poppins-SemiBold" }}
+          >
+            Cancel
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
+
+{/* DELETE SUCCESS MODAL */}
+<Modal
+  animationType="fade"
+  transparent={true}
+  visible={showDeleteSuccessModal}
+  onRequestClose={() => setShowDeleteSuccessModal(false)}
+>
+  <View className="flex-1 justify-center items-center bg-black/50">
+    <View className="bg-white w-11/12 max-w-sm rounded-2xl p-6 items-center shadow-lg">
+      <Text className="text-3xl font-[Poppins] text-center my-4">
+        ACCOUNT DELETED
+      </Text>
+
+      <View className="h-24 w-24 bg-green-500 items-center justify-center rounded-xl mb-6">
+        <Check size={80} color="white" strokeWidth={3} />
+      </View>
+
+      <Text className="text-lg mb-6 text-center">
+        Account Deleted <Text className="font-bold text-green-600">Successfully!</Text>
+      </Text>
+    </View>
+  </View>
+</Modal>
     </SafeAreaView>
   );
 }
