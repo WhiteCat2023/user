@@ -3,7 +3,6 @@ import * as Notifications from "expo-notifications";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Image,
   RefreshControl,
   Text as RNText,
@@ -29,7 +28,6 @@ const NotificationsScreen = () => {
 
   const [notifications, setNotifications] = useState([]);
   const [filteredNotifications, setFilteredNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -64,7 +62,6 @@ const NotificationsScreen = () => {
 
   // fetch data
   const fetchNotifications = async () => {
-    setLoading(true);
     try {
       const result = await getAllReportsAsNotifications();
       if (result.status === 200) {
@@ -91,7 +88,6 @@ const NotificationsScreen = () => {
     } catch (error) {
       console.error("Fetch error:", error);
     } finally {
-      setLoading(false);
       setRefreshing(false);
     }
   };
@@ -189,15 +185,6 @@ const NotificationsScreen = () => {
       })
     }));
   };
-
-  if (loading) {
-    return (
-      <Box className="flex-1 justify-center items-center">
-        <ActivityIndicator size="large" />
-        <RNText className="mt-4">Loading notifications...</RNText>
-      </Box>
-    );
-  }
 
   // ✅ Mobile Layout Only
   return (
@@ -348,8 +335,19 @@ const NotificationsScreen = () => {
           </View>
         )}
         ListEmptyComponent={
-          <View className="items-center mt-12">
-            <RNText>No reports found</RNText>
+          <View className="flex-1 items-center mt-16 px-6">
+            <Image
+              source={require('@/assets/images/notifications-bg.png')}
+              style={{ width: 260, height: 260, resizeMode: 'contain' }}
+            />
+
+            <RNText className="text-center text-gray-600 mt-4 text-sm">
+              Notifications will be posted here.
+            </RNText>
+
+            <RNText className="text-center mt-4 text-black text-base">
+              You'll be notified about the <RNText className="font-bold">Reports</RNText> you've made, so you can stay updated.
+            </RNText>
           </View>
         }
       />

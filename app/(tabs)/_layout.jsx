@@ -16,6 +16,13 @@ export default function TabLayout() {
   const shimmerAnimation = useRef(new Animated.Value(-1)).current;
   const rotateAnimation = useRef(new Animated.Value(0)).current;
 
+  // Loading screen animations
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadedTabs, setLoadedTabs] = useState(new Set());
+  const loadingFadeAnim = useRef(new Animated.Value(0)).current;
+  const loadingScaleAnim = useRef(new Animated.Value(0.5)).current;
+  const loadingRotateAnim = useRef(new Animated.Value(0)).current;
+
   // Start continuous pulse animation
   useEffect(() => {
     const pulse = () => {
@@ -52,6 +59,62 @@ export default function TabLayout() {
     };
     setTimeout(shimmer, 1000); // Start after 1 second
   }, []);
+
+  // Loading screen animation on tab change - only for tabs that haven't been loaded yet
+  useEffect(() => {
+    // Skip loading animation for tabs that have already been loaded
+    if (loadedTabs.has(currentTab)) {
+      return;
+    }
+
+    setIsLoading(true);
+    loadingFadeAnim.setValue(0);
+    loadingScaleAnim.setValue(0.5);
+    loadingRotateAnim.setValue(0);
+
+    Animated.parallel([
+      Animated.timing(loadingFadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.spring(loadingScaleAnim, {
+        toValue: 1,
+        friction: 3,
+        useNativeDriver: true,
+      }),
+      Animated.loop(
+        Animated.timing(loadingRotateAnim, {
+          toValue: 1,
+          duration: 2000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        })
+      ).start(),
+    ]).start();
+
+    const timer = setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(loadingFadeAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(loadingScaleAnim, {
+          toValue: 0.5,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setIsLoading(false);
+        loadingRotateAnim.stopAnimation();
+        // Mark this tab as loaded
+        setLoadedTabs(prev => new Set([...prev, currentTab]));
+      });
+    }, 1500); // Loading duration
+
+    return () => clearTimeout(timer);
+  }, [segments, loadedTabs, currentTab]);
 
   const animateFab = () => {
     // Scale animation (existing)
@@ -151,6 +214,27 @@ export default function TabLayout() {
           }}
         />
       </Tabs>
+      {isLoading && (
+        <Animated.View style={[styles.loadingOverlay, { opacity: loadingFadeAnim }]}>
+          <Animated.Image
+            source={require("../../assets/images/signup_logo.png")}
+            style={[
+              styles.loadingLogo,
+              {
+                transform: [
+                  { scale: loadingScaleAnim },
+                  {
+                    rotate: loadingRotateAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0deg', '360deg'],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          />
+        </Animated.View>
+      )}
       {currentTab !== '(ai)' && currentTab !== '[id]' && (
         <Animated.View 
           style={[
@@ -223,5 +307,20 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.4)',
     width: 20,
     transform: [{ skewX: '-20deg' }],
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  loadingLogo: {
+    width: 100,
+    height: 100,
   },
 });

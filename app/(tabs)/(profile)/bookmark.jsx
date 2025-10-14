@@ -218,8 +218,17 @@ const Bookmark = () => {
               );
             }}
             ListEmptyComponent={() => (
-              <View className="flex-1 justify-center items-center mt-20">
-                <Text className="text-gray-500">No bookmarks found.</Text>
+              <View className="flex-1 justify-center items-center mt-20 px-6">
+                <Image
+                  source={require('@/assets/images/bookmarks-bg.png')}
+                  style={{ width: 260, height: 260, resizeMode: 'contain' }}
+                />
+
+                <Text className="text-gray-400 -mt-8 text-sm">sure is empty here...</Text>
+
+                <Text className="text-center mt-6 text-base text-black px-3">
+                  Visit <Text className="font-bold">Forums</Text> and <Text className="font-bold">BookMark</Text> discussion that interest you
+                </Text>
               </View>
             )}
           />

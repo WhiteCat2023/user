@@ -29,14 +29,17 @@ import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Animated,
+  Easing,
   Image,
   Modal,
   SafeAreaView,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 
 export default function EditReport() {
@@ -69,6 +72,11 @@ export default function EditReport() {
   const titleInputRef = useRef(null);
   const descriptionInputRef = useRef(null);
 
+  // Loading animation refs
+  const loadingFadeAnim = useRef(new Animated.Value(0)).current;
+  const loadingScaleAnim = useRef(new Animated.Value(0.5)).current;
+  const loadingRotateAnim = useRef(new Animated.Value(0)).current;
+
   const tierOptions = [
     { label: "Low", value: "Low" },
     { label: "Medium", value: "Medium" },
@@ -79,7 +87,32 @@ export default function EditReport() {
   useEffect(() => {
     if (id) {
       const fetchReport = async () => {
-        setLoading(true);
+        // Start loading animation
+        loadingFadeAnim.setValue(0);
+        loadingScaleAnim.setValue(0.5);
+        loadingRotateAnim.setValue(0);
+
+        Animated.parallel([
+          Animated.timing(loadingFadeAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.spring(loadingScaleAnim, {
+            toValue: 1,
+            friction: 3,
+            useNativeDriver: true,
+          }),
+          Animated.loop(
+            Animated.timing(loadingRotateAnim, {
+              toValue: 1,
+              duration: 2000,
+              easing: Easing.linear,
+              useNativeDriver: true,
+            })
+          ).start(),
+        ]).start();
+
         const docRef = doc(db, "allReports", id);
         const docSnap = await getDoc(docRef);
 
@@ -96,7 +129,23 @@ export default function EditReport() {
           Alert.alert("Error", "Report not found.");
           router.back();
         }
-        setLoading(false);
+
+        // Stop loading animation
+        Animated.parallel([
+          Animated.timing(loadingFadeAnim, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(loadingScaleAnim, {
+            toValue: 0.5,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          loadingRotateAnim.stopAnimation();
+          setLoading(false);
+        });
       };
 
       fetchReport();
@@ -326,10 +375,27 @@ export default function EditReport() {
 
   if (loading) {
     return (
-      <Box className="flex-1 justify-center items-center bg-[#D9E9DD]">
-        <ActivityIndicator size="large" />
-        <Text>Loading report...</Text>
-      </Box>
+      <View style={{ flex: 1, backgroundColor: '#D9E9DD' }}>
+        <Animated.View style={[styles.loadingOverlay, { opacity: loadingFadeAnim }]}>
+          <Animated.Image
+            source={require("../../../../assets/images/signup_logo.png")}
+            style={[
+              styles.loadingLogo,
+              {
+                transform: [
+                  { scale: loadingScaleAnim },
+                  {
+                    rotate: loadingRotateAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0deg', '360deg'],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          />
+        </Animated.View>
+      </View>
     );
   }
 
@@ -705,3 +771,16 @@ export default function EditReport() {
     </GluestackUIProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingLogo: {
+    width: 100,
+    height: 100,
+  },
+});

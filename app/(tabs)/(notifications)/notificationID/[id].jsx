@@ -13,8 +13,9 @@ import { doc, getDoc } from "firebase/firestore";
 import { ChevronLeft, ChevronRight, Info, X } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
+    Animated,
     Dimensions,
+    Easing,
     FlatList,
     Image,
     Modal,
@@ -41,6 +42,11 @@ export default function NotificationReportDetails() {
   // Calculate how many images are visible at once
   const imagesPerPage = 2;
   const itemWidth = (screenWidth - 80) / imagesPerPage;
+
+  // Loading animation refs
+  const loadingFadeAnim = useRef(new Animated.Value(0)).current;
+  const loadingScaleAnim = useRef(new Animated.Value(0.5)).current;
+  const loadingRotateAnim = useRef(new Animated.Value(0)).current;
 
   const openImageModal = (uri) => {
     setSelectedImage(uri);
@@ -88,7 +94,32 @@ export default function NotificationReportDetails() {
   useEffect(() => {
     if (id) {
       const fetchReport = async () => {
-        setLoading(true);
+        // Start loading animation
+        loadingFadeAnim.setValue(0);
+        loadingScaleAnim.setValue(0.5);
+        loadingRotateAnim.setValue(0);
+
+        Animated.parallel([
+          Animated.timing(loadingFadeAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.spring(loadingScaleAnim, {
+            toValue: 1,
+            friction: 3,
+            useNativeDriver: true,
+          }),
+          Animated.loop(
+            Animated.timing(loadingRotateAnim, {
+              toValue: 1,
+              duration: 2000,
+              easing: Easing.linear,
+              useNativeDriver: true,
+            })
+          ).start(),
+        ]).start();
+
         const docRef = doc(db, "allReports", id);
         const docSnap = await getDoc(docRef);
 
@@ -97,7 +128,23 @@ export default function NotificationReportDetails() {
         } else {
           console.log("No such document!");
         }
-        setLoading(false);
+
+        // Stop loading animation
+        Animated.parallel([
+          Animated.timing(loadingFadeAnim, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(loadingScaleAnim, {
+            toValue: 0.5,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          loadingRotateAnim.stopAnimation();
+          setLoading(false);
+        });
       };
 
       fetchReport();
@@ -106,10 +153,27 @@ export default function NotificationReportDetails() {
 
   if (loading) {
     return (
-      <Box className="flex-1 justify-center items-center bg-[#D9E9DD]">
-        <ActivityIndicator size="large" />
-        <RNText>Loading report...</RNText>
-      </Box>
+      <View style={{ flex: 1, backgroundColor: '#D9E9DD' }}>
+        <Animated.View style={[styles.loadingOverlay, { opacity: loadingFadeAnim }]}>
+          <Animated.Image
+            source={require("../../../../assets/images/signup_logo.png")}
+            style={[
+              styles.loadingLogo,
+              {
+                transform: [
+                  { scale: loadingScaleAnim },
+                  {
+                    rotate: loadingRotateAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0deg', '360deg'],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          />
+        </Animated.View>
+      </View>
     );
   }
 
@@ -421,5 +485,15 @@ const styles = {
     borderWidth: 2,
     borderColor: '#e0e0e0',
     borderStyle: 'dashed',
+  },
+  loadingOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingLogo: {
+    width: 100,
+    height: 100,
   },
 };

@@ -35,7 +35,6 @@ export default function Reports() {
 
   const [reports, setReports] = useState([]);
   const [filteredReports, setFilteredReports] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState(null);
@@ -45,7 +44,6 @@ export default function Reports() {
 
   // fetch reports (like Notifications code, no index required)
   const fetchReports = useCallback(() => {
-    setLoading(true);
 
     const q = query(collection(db, "allReports"), orderBy("timestamp", "desc"));
 
@@ -79,12 +77,10 @@ export default function Reports() {
 
         setReports(list);
         setFilteredReports(list);
-        setLoading(false);
         setRefreshing(false);
       },
       (error) => {
         console.error("Error fetching reports:", error);
-        setLoading(false);
         setRefreshing(false);
       }
     );
@@ -171,15 +167,6 @@ export default function Reports() {
       return "Invalid Date";
     }
   };
-
-  if (loading) {
-    return (
-      <Box className="flex-1 justify-center items-center">
-        <ActivityIndicator size="large" />
-        <RNText className="mt-4">Loading reports...</RNText>
-      </Box>
-    );
-  }
 
   return (
     <SafeAreaView className="flex-1 bg-[#D9E9DD]">
@@ -375,8 +362,19 @@ export default function Reports() {
           );
         }}
         ListEmptyComponent={
-          <View className="items-center mt-12">
-            <RNText>No reports found</RNText>
+          <View className="flex-1 items-center mt-16 px-6">
+            <Image
+              source={require('@/assets/images/reports-bg.png')}
+              style={{ width: 260, height: 260, resizeMode: 'contain' }}
+            />
+
+            <RNText className="text-center text-gray-600 px-14 text-sm">
+              {`Reports that you made will be posted here.`}
+            </RNText>
+
+            <RNText className="text-center mt-2 text-black px-1 text-lg">
+              <>Help us <RNText className="font-bold">Report</RNText> your concern and make the <RNText className="font-bold">community better</RNText> .</>
+            </RNText>
           </View>
         }
       />
