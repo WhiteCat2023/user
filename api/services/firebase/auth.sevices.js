@@ -41,7 +41,7 @@ export async function newUserDoc(userCredentials, role, extra) {
     const providerId = providerData?.[0]?.providerId || null;
     const photoUrl = providerData?.[0]?.photoURL || null;
 
-    await setDoc(doc(db, "users", uid), {
+    const userDocPayload = {
       name: displayName,
       email,
       phone: phoneNumber || null,
@@ -52,7 +52,14 @@ export async function newUserDoc(userCredentials, role, extra) {
       role,
       firstName: extra.firstName,
       lastName: extra.lastName
-    });
+    };
+
+    // If location array was provided in the extra payload, attach it to the user doc
+    if (extra && Array.isArray(extra.location) && extra.location.length >= 2) {
+      userDocPayload.location = extra.location;
+    }
+
+    await setDoc(doc(db, "users", uid), userDocPayload);
   } catch (error) {
     console.error(`Firestore Error: ${error.message}`);
     throw error;

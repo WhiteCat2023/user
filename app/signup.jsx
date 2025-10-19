@@ -4,19 +4,20 @@ import { GoogleSignUpButton } from "@/components/ui/button/googleAuthButtons";
 import Input from "@/components/ui/input/Input";
 import { Role } from "@/enums/roles";
 import { useFonts } from "expo-font";
+import * as Location from "expo-location";
 import { useRouter } from "expo-router";
+import { sendEmailVerification } from "firebase/auth";
 import { useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    SafeAreaView,
-    ScrollView,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { sendEmailVerification } from "firebase/auth";
 // import { auth } from "../api/config/firebase";
 import "../global.css";
 
@@ -73,8 +74,33 @@ export default function SignUp() {
     }
 
     setLoading(true);
+    // try to get location permission and current coords (latitude, longitude)
+    let locationArray = null;
     try {
-      const userCredential = await signUp(credentials);
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === "granted") {
+        const loc = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Highest,
+        });
+        if (loc?.coords) {
+          locationArray = [loc.coords.latitude, loc.coords.longitude];
+        }
+      } else {
+        // Permission not granted - inform the user. Continue without location.
+        Alert.alert(
+          "Location permission required",
+          "Location permission was not granted. You can enable it in device settings to attach your location to your account."
+        );
+      }
+    } catch (locErr) {
+      console.warn("Location error:", locErr);
+      // Continue without location if fetching fails
+    }
+
+    try {
+      // send credentials plus location (location may be null if not available)
+      const payload = { ...credentials, location: locationArray };
+      const userCredential = await signUp(payload);
 
       if (userCredential?.data?.user) {
         try {
