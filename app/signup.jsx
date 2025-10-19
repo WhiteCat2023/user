@@ -7,6 +7,7 @@ import { useFonts } from "expo-font";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
+    ActivityIndicator,
     Alert,
     Image,
     SafeAreaView,
@@ -15,11 +16,14 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import { sendEmailVerification } from "firebase/auth";
+// import { auth } from "../api/config/firebase";
 import "../global.css";
 
 export default function SignUp() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [credentials, setCredentials] = useState({
     firstName: "",
     lastName: "",
@@ -38,6 +42,11 @@ export default function SignUp() {
 
   const [showErrors, setShowErrors] = useState(false);
 
+  const isValidEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const handleChange = (field, value) => {
     setCredentials((prev) => ({
       ...prev,
@@ -47,6 +56,7 @@ export default function SignUp() {
 
   const handleSubmit = async () => {
     setShowErrors(true);
+    
     if (
       !credentials.firstName ||
       !credentials.lastName ||
@@ -56,8 +66,65 @@ export default function SignUp() {
       Alert.alert("Please fix the errors before submitting.");
       return;
     }
-    await signUp(credentials);
-    Alert.alert("Account created successfully");
+
+    if (!isValidEmail(credentials.email)) {
+      Alert.alert("Invalid email format");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const userCredential = await signUp(credentials);
+
+      if (userCredential?.data?.user) {
+        try {
+          await sendEmailVerification(userCredential?.data?.user);
+          console.log(
+            "✓ Verification email sent successfully to:",
+            userCredential.user.email
+          );
+        } catch (emailError) {
+          console.error("✗ Email verification failed:", emailError);
+          console.log(
+            "User created but email not sent. Error:",
+            emailError.code,
+            emailError.message
+          );
+        }
+
+        setLoading(false);
+        setCredentials({
+          firstName: "",
+          lastName: "",
+          email: "",
+          password: "",
+          confirmPassword: "",
+          role: Role.USER,
+        });
+        setShowErrors(false);
+
+        Alert.alert(
+          "Account Created",
+          "Your account has been created. A verification email should arrive shortly at " +
+            credentials.email +
+            ". If you don't receive it, check your spam folder or request a new one after logging in.",
+          [
+            {
+              text: "Back to Login",
+              onPress: () => {
+                router.replace("/index");
+              },
+            },
+          ]
+        );
+      } else {
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error("Signup error:", error);
+      setLoading(false);
+      Alert.alert("Error", error.message || "Failed to create account");
+    }
   };
 
   if (!fontsLoaded) return null;
@@ -90,6 +157,7 @@ export default function SignUp() {
               onChangeText={(t) => handleChange("firstName", t)}
               leftIconName="user"
               showErrors={showErrors}
+              editable={!loading}
               style={{ borderColor: "green", borderWidth: 1, borderRadius: 8 }}
             />
 
@@ -99,6 +167,7 @@ export default function SignUp() {
               onChangeText={(t) => handleChange("lastName", t)}
               leftIconName="user"
               showErrors={showErrors}
+              editable={!loading}
               style={{ borderColor: "green", borderWidth: 1, borderRadius: 8 }}
             />
 
@@ -108,6 +177,7 @@ export default function SignUp() {
               onChangeText={(t) => handleChange("email", t)}
               leftIconName="mail"
               showErrors={showErrors}
+              editable={!loading}
               style={{ borderColor: "green", borderWidth: 1, borderRadius: 8 }}
             />
 
@@ -121,6 +191,7 @@ export default function SignUp() {
               onIconPress={() => setShowPassword(!showPassword)}
               type="password"
               showErrors={showErrors}
+              editable={!loading}
               style={{ borderColor: "green", borderWidth: 1, borderRadius: 8 }}
             />
 
@@ -135,6 +206,7 @@ export default function SignUp() {
               type="confirmPassword"
               compareWith={credentials.password}
               showErrors={showErrors}
+              editable={!loading}
               style={{ borderColor: "green", borderWidth: 1, borderRadius: 8 }}
             />
           </View>
@@ -151,9 +223,16 @@ export default function SignUp() {
               shadowOffset: { width: 0, height: 2 },
               shadowRadius: 4,
               elevation: 3,
+              opacity: loading ? 0.7 : 1,
             }}
+            disabled={loading}
+            activeOpacity={loading ? 1 : 0.8}
           >
-            <Text className="text-white font-bold text-center">Confirm</Text>
+            {loading ? (
+              <ActivityIndicator color="white" size="large" />
+            ) : (
+              <Text className="text-white font-bold text-center">Confirm</Text>
+            )}
           </TouchableOpacity>
 
           {/* Divider */}

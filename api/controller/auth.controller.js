@@ -40,6 +40,7 @@ export const signUp = async ( req ) => {
         return { 
             status: HttpStatus.OK, 
             message: "User created successfully" ,
+            data: userCredentials
         }
     }catch(error){
         console.error(`Creating User Error: ${error.message}`);

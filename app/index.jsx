@@ -8,14 +8,14 @@ import {
   StyleSheet,
   Text,
   View,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-// Gluestack UI components
 import { Button, ButtonText } from "@/components/ui/button";
 import { Pressable } from "@/components/ui/pressable";
 import { useAuth } from "../context/AuthContext";
 import { ActivityIndicator } from "react-native";
+// import { auth } from "@/api/config/firebase";
 
 export const options = {
   headerShown: false,
@@ -45,6 +45,7 @@ export default function LoginScreen() {
       await login({ email: credentials.email, password: credentials.password });
     } catch (error) {
       console.error("Login error:", error);
+      Alert.alert("Login Error", error.message);
     } finally {
       setLoading(false);
     }
