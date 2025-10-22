@@ -62,11 +62,14 @@ const ForumDetails = () => {
   // Add reply to a comment
   const addReply = async (parentId, replyToId = null) => {
     if (!replyText[parentId]?.trim()) return;
+    const userDoc = await getDoc(doc(db, "users", user.uid))
+    const userData = userDoc.exists() ? userDoc.data() : {}
+    const authorName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || user?.displayName || "Unknown"
     // Only allow replies to comments, not to replies
     const collectionRef = collection(db, "forums", id, "comments", parentId, "replies");
     await addDoc(collectionRef, {
       content: replyText[parentId],
-      authorName: user?.displayName || "Anonymous",
+      authorName,
       authorPhoto: user?.photoURL,
       authorId: user?.uid,
       likesCount: 0,
@@ -195,8 +198,18 @@ const [commentFilter, setCommentFilter] = useState("Newest") // "Newest" | "Olde
 
   // --- Load forum ---
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, "forums", id), (docSnap) => {
-      if (docSnap.exists()) setForum({ id: docSnap.id, ...docSnap.data() })
+    const unsub = onSnapshot(doc(db, "forums", id), async (docSnap) => {
+      if (docSnap.exists()) {
+        const forumData = { id: docSnap.id, ...docSnap.data() }
+        if (forumData.authorId) {
+          const userDoc = await getDoc(doc(db, "users", forumData.authorId))
+          if (userDoc.exists()) {
+            const userData = userDoc.data()
+            forumData.authorName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || "Unknown User"
+          }
+        }
+        setForum(forumData)
+      }
     })
     return () => unsub()
   }, [id])
@@ -273,9 +286,12 @@ const [commentFilter, setCommentFilter] = useState("Newest") // "Newest" | "Olde
   // --- Add comment ---
   const addComment = async () => {
     if (!newComment.trim()) return
+    const userDoc = await getDoc(doc(db, "users", user.uid))
+    const userData = userDoc.exists() ? userDoc.data() : {}
+    const authorName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || user?.displayName || "Unknown"
     await addDoc(collection(db, "forums", id, "comments"), {
       content: newComment,
-      authorName: user?.displayName || "Anonymous",
+      authorName,
       authorPhoto: user?.photoURL,
       authorId: user?.uid,
       likesCount: 0,
@@ -349,9 +365,12 @@ const [commentFilter, setCommentFilter] = useState("Newest") // "Newest" | "Olde
   // --- Add nested reply ---
   const addNestedReply = async (parentId) => {
     if (!replyText[parentId]?.trim()) return
+    const userDoc = await getDoc(doc(db, "users", user.uid))
+    const userData = userDoc.exists() ? userDoc.data() : {}
+    const authorName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || user?.displayName || "Unknown"
     await addDoc(collection(db, "forums", id, "comments", parentId, "replies"), {
       content: replyText[parentId],
-      authorName: user?.displayName || "Anonymous",
+      authorName,
       authorPhoto: user?.photoURL,
       authorId: user?.uid,
       likesCount: 0,
@@ -546,8 +565,8 @@ const [commentFilter, setCommentFilter] = useState("Newest") // "Newest" | "Olde
 
   // build filtered list once, then sort according to selected filter
 const baseFilteredComments = allComments.filter(c =>
-  c.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-  c.authorName.toLowerCase().includes(searchQuery.toLowerCase())
+  (c.content && c.content.toLowerCase().includes(searchQuery.toLowerCase())) ||
+  (c.authorName && c.authorName.toLowerCase().includes(searchQuery.toLowerCase()))
 )
 
 const tsToMillis = (t) => (t && t.toDate ? t.toDate().getTime() : 0)

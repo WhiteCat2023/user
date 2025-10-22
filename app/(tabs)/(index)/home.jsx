@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   Easing,
   FlatList,
@@ -41,7 +42,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 
 // Icons
-import { Heart, MessageCircle, Plus } from "lucide-react-native";
+import { Heart, MessageCircle, MoreVertical, Plus } from "lucide-react-native";
 
 const ForumsScreen = () => {
   const { user } = useAuth();
@@ -62,6 +63,7 @@ const ForumsScreen = () => {
   const [likingPosts, setLikingPosts] = useState(new Set());
   const [likeAnimations, setLikeAnimations] = useState({});
   const [commentAnimations, setCommentAnimations] = useState({});
+  const [menuOpenId, setMenuOpenId] = useState(null);
 
   // Update current time every minute
   useEffect(() => {
@@ -403,7 +405,60 @@ const ForumsScreen = () => {
             const likeAnimationValue = likeAnimations[item.id] || new Animated.Value(1);
             const commentAnimationValue = commentAnimations[item.id] || new Animated.Value(1);
             return (
-              <Card className="p-4 mb-4 rounded-xl border border-green-600 bg-white">
+              <Card className="p-4 mb-4 rounded-xl border border-green-600 bg-white" style={{ position: 'relative' }}>
+                {/* Kebab menu - only visible to owner */}
+                {isOwner && (
+                  <View style={{ position: "absolute", top: 8, right: 8, zIndex: 20 }}>
+                    <TouchableOpacity
+                      onPress={() => setMenuOpenId(prev => (prev === item.id ? null : item.id))}
+                      style={{
+                        width: 16,
+                        height: 26,
+                        borderRadius: 18,
+                        backgroundColor: 'rgba(255,255,255,0.95)',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                      hitSlop={{ top: 10, left: 10, right: 10, bottom: 10 }}
+                      activeOpacity={0.8}
+                    >
+                      <MoreVertical size={20} color="#111827" />
+                    </TouchableOpacity>
+
+                    {menuOpenId === item.id && (
+                      <View style={{ width: 70, position: 'absolute', top: 30, right: 0, backgroundColor: "white", borderRadius: 8, paddingVertical: 6, paddingHorizontal: 8, shadowColor: "#000", shadowOpacity: 0.13, shadowRadius: 6, elevation: 6, zIndex: 999 }}>
+                        <TouchableOpacity
+                          onPress={() => {
+                            // Edit: populate modal and open in edit mode
+                            setNewDiscussion({ title: item.title || "", description: item.content || "" });
+                            setEditingId(item.id);
+                            setModalVisible(true);
+                            setMenuOpenId(null);
+                          }}
+                          style={{ paddingVertical: 6 }}
+                        >
+                          <Text className="text-black font-[DM]">Edit</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => {
+                            // Delete with confirmation
+                            Alert.alert(
+                              "Delete discussion",
+                              "Are you sure you want to delete this discussion? This action cannot be undone.",
+                              [
+                                { text: "Cancel", style: "cancel" },
+                                { text: "Delete", style: "destructive", onPress: async () => { await deleteDiscussion(item.id); setMenuOpenId(null); } }
+                              ]
+                            );
+                          }}
+                          style={{ paddingVertical: 6 }}
+                        >
+                          <Text className="text-red-600 font-[DM]">Delete</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
+                )}
                 <TouchableOpacity onPress={() => router.push(`/(tabs)/(index)/${item.id}`)}>
                   <Box className="flex-row items-center mb-2">
                     <Text className="text-xl text-black font-[DMBold]">{item.title}</Text>
