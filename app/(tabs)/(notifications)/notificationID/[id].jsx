@@ -1,11 +1,11 @@
 import { db } from "@/api/config/firebase.config";
 import { Box } from "@/components/ui/box";
 import {
-    Popover,
-    PopoverArrow,
-    PopoverBackdrop,
-    PopoverBody,
-    PopoverContent,
+  Popover,
+  PopoverArrow,
+  PopoverBackdrop,
+  PopoverBody,
+  PopoverContent,
 } from "@/components/ui/popover";
 import { useFonts } from "expo-font";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -13,18 +13,18 @@ import { doc, getDoc } from "firebase/firestore";
 import { ChevronLeft, ChevronRight, Info, X } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import {
-    Animated,
-    Dimensions,
-    Easing,
-    FlatList,
-    Image,
-    Modal,
-    Text as RNText,
-    SafeAreaView,
-    ScrollView,
-    TouchableOpacity,
-    View,
-    useWindowDimensions
+  ActivityIndicator,
+  Dimensions,
+  FlatList,
+  Image,
+  Linking,
+  Modal,
+  Text as RNText,
+  SafeAreaView,
+  ScrollView,
+  TouchableOpacity,
+  View,
+  useWindowDimensions
 } from "react-native";
 
 export default function NotificationReportDetails() {
@@ -42,11 +42,6 @@ export default function NotificationReportDetails() {
   // Calculate how many images are visible at once
   const imagesPerPage = 2;
   const itemWidth = (screenWidth - 80) / imagesPerPage;
-
-  // Loading animation refs
-  const loadingFadeAnim = useRef(new Animated.Value(0)).current;
-  const loadingScaleAnim = useRef(new Animated.Value(0.5)).current;
-  const loadingRotateAnim = useRef(new Animated.Value(0)).current;
 
   const openImageModal = (uri) => {
     setSelectedImage(uri);
@@ -81,45 +76,20 @@ export default function NotificationReportDetails() {
   };
 
   const [fontsLoaded] = useFonts({
-    Pacifico: require("../../../../assets/fonts/Pacifico-Regular.ttf"),
-    SpaceMono: require("../../../../assets/fonts/SpaceMono-Regular.ttf"),
-    Roboto: require("../../../../assets/fonts/Roboto-Bold.ttf"),
-    Poppins: require("../../../../assets/fonts/Poppins-Bold.ttf"),
-    DM: require("../../../../assets/fonts/DMSans-Regular.ttf"),
-    DMBold: require("../../../../assets/fonts/DMSans-Bold.ttf"),
-  });
+        Pacifico: require("../../../../assets/fonts/Pacifico-Regular.ttf"),
+        SpaceMono: require("../../../../assets/fonts/SpaceMono-Regular.ttf"),
+        Roboto: require("../../../../assets/fonts/Roboto-Bold.ttf"),
+        Poppins: require("../../../../assets/fonts/Poppins-Bold.ttf"),
+        DM: require("../../../../assets/fonts/DMSans-Regular.ttf"),
+        DMBold: require("../../../../assets/fonts/DMSans-Bold.ttf"),
+      });
     
       if (!fontsLoaded) return null;
 
   useEffect(() => {
     if (id) {
       const fetchReport = async () => {
-        // Start loading animation
-        loadingFadeAnim.setValue(0);
-        loadingScaleAnim.setValue(0.5);
-        loadingRotateAnim.setValue(0);
-
-        Animated.parallel([
-          Animated.timing(loadingFadeAnim, {
-            toValue: 1,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-          Animated.spring(loadingScaleAnim, {
-            toValue: 1,
-            friction: 3,
-            useNativeDriver: true,
-          }),
-          Animated.loop(
-            Animated.timing(loadingRotateAnim, {
-              toValue: 1,
-              duration: 2000,
-              easing: Easing.linear,
-              useNativeDriver: true,
-            })
-          ).start(),
-        ]).start();
-
+        setLoading(true);
         const docRef = doc(db, "allReports", id);
         const docSnap = await getDoc(docRef);
 
@@ -128,23 +98,7 @@ export default function NotificationReportDetails() {
         } else {
           console.log("No such document!");
         }
-
-        // Stop loading animation
-        Animated.parallel([
-          Animated.timing(loadingFadeAnim, {
-            toValue: 0,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-          Animated.timing(loadingScaleAnim, {
-            toValue: 0.5,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-        ]).start(() => {
-          loadingRotateAnim.stopAnimation();
-          setLoading(false);
-        });
+        setLoading(false);
       };
 
       fetchReport();
@@ -153,27 +107,10 @@ export default function NotificationReportDetails() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#D9E9DD' }}>
-        <Animated.View style={[styles.loadingOverlay, { opacity: loadingFadeAnim }]}>
-          <Animated.Image
-            source={require("../../../../assets/images/signup_logo.png")}
-            style={[
-              styles.loadingLogo,
-              {
-                transform: [
-                  { scale: loadingScaleAnim },
-                  {
-                    rotate: loadingRotateAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: ['0deg', '360deg'],
-                    }),
-                  },
-                ],
-              },
-            ]}
-          />
-        </Animated.View>
-      </View>
+      <Box className="flex-1 justify-center items-center bg-[#D9E9DD]">
+        <ActivityIndicator size="large" />
+        <RNText>Loading report...</RNText>
+      </Box>
     );
   }
 
@@ -227,7 +164,7 @@ export default function NotificationReportDetails() {
           {/* Status */}
           <View className="items-center mb-6">
             <RNText className="text-lg font-[Roboto]">
-              THIS REPORT IS CURRENTLY
+              THIS REPORT HAVE ALREADY BEEN
             </RNText>
             <RNText
               className="text-2xl font-[Roboto]"
@@ -384,6 +321,43 @@ export default function NotificationReportDetails() {
               </View>
             )}
           </View>
+
+          {/* Location Map / Fallback */}
+          <View className="mt-6">
+            <RNText className="text-xl mb-3 font-[DMBold]">Location:</RNText>
+            {report?.location && report.location.length === 2 ? (
+              <View style={mapStyles.cardContainer}>
+                {/* If you want an interactive native map, install `react-native-maps` and re-enable MapView here. */}
+                {/* Static map image (Google Static Maps) if API key provided, otherwise show an 'Open in Maps' button */}
+                {global.GOOGLE_MAPS_API_KEY ? (
+                  <Image
+                    source={{ uri: `https://maps.googleapis.com/maps/api/staticmap?center=${report.location[1]},${report.location[0]}&zoom=15&size=600x300&markers=color:red%7C${report.location[1]},${report.location[0]}&key=${global.GOOGLE_MAPS_API_KEY}` }}
+                    style={{ width: '100%', height: '100%' }}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 12 }}>
+                    <RNText className="text-gray-600 text-sm mb-3">Click the button below to see your location.</RNText>
+                    <TouchableOpacity
+                      onPress={() => {
+                        const lat = report.location[1];
+                        const lng = report.location[0];
+                        const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+                        Linking.openURL(url);
+                      }}
+                      className="bg-green-500 px-4 py-2 rounded-md"
+                    >
+                      <RNText className="text-white font-bold">Open in Maps</RNText>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            ) : (
+              <View style={styles.noFilesContainer}>
+                <RNText className="text-gray-500">Location not available.</RNText>
+              </View>
+            )}
+          </View>
         </View>
       </ScrollView>
 
@@ -486,14 +460,25 @@ const styles = {
     borderColor: '#e0e0e0',
     borderStyle: 'dashed',
   },
-  loadingOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+};
+
+const mapStyles = {
+  cardContainer: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 3,
+    borderColor: '#6b7280',
+    backgroundColor: '#fff',
+    width: '100%',
+    height: 180,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  loadingLogo: {
-    width: 100,
-    height: 100,
+  image: {
+    width: '100%',
+    height: '100%',
   },
 };

@@ -1,11 +1,11 @@
 import { db } from "@/api/config/firebase.config";
 import { Box } from "@/components/ui/box";
 import {
-    Popover,
-    PopoverArrow,
-    PopoverBackdrop,
-    PopoverBody,
-    PopoverContent,
+  Popover,
+  PopoverArrow,
+  PopoverBackdrop,
+  PopoverBody,
+  PopoverContent,
 } from "@/components/ui/popover";
 import { useFonts } from "expo-font";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -13,18 +13,19 @@ import { doc, getDoc } from "firebase/firestore";
 import { ChevronLeft, ChevronRight, Info, X } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import {
-    Animated,
-    Dimensions,
-    Easing,
-    FlatList,
-    Image,
-    Modal,
-    Text as RNText,
-    SafeAreaView,
-    ScrollView,
-    TouchableOpacity,
-    View,
-    useWindowDimensions
+  Animated,
+  Dimensions,
+  Easing,
+  FlatList,
+  Image,
+  Linking,
+  Modal,
+  Text as RNText,
+  SafeAreaView,
+  ScrollView,
+  TouchableOpacity,
+  View,
+  useWindowDimensions
 } from "react-native";
 
 export default function ReportDetails() {
@@ -384,6 +385,44 @@ export default function ReportDetails() {
               </View>
             )}
           </View>
+
+            {/* Location Map / Fallback */}
+                      <View className="mt-6">
+                        <RNText className="text-xl mb-3 font-[DMBold]">Location:</RNText>
+                        {report?.location && report.location.length === 2 ? (
+                          <View style={mapStyles.cardContainer}>
+                            {/* If you want an interactive native map, install `react-native-maps` and re-enable MapView here. */}
+                            {/* Static map image (Google Static Maps) if API key provided, otherwise show an 'Open in Maps' button */}
+                            {global.GOOGLE_MAPS_API_KEY ? (
+                              <Image
+                                source={{ uri: `https://maps.googleapis.com/maps/api/staticmap?center=${report.location[1]},${report.location[0]}&zoom=15&size=600x300&markers=color:red%7C${report.location[1]},${report.location[0]}&key=${global.GOOGLE_MAPS_API_KEY}` }}
+                                style={{ width: '100%', height: '100%' }}
+                                resizeMode="cover"
+                              />
+                            ) : (
+                              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 12 }}>
+                                <RNText className="text-gray-600 text-sm mb-3">Click the button below to see your location.</RNText>
+                                <TouchableOpacity
+                                  onPress={() => {
+                                    const lat = report.location[1];
+                                    const lng = report.location[0];
+                                    const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+                                    Linking.openURL(url);
+                                  }}
+                                  className="bg-green-500 px-4 py-2 rounded-md"
+                                >
+                                  <RNText className="text-white font-bold">Open in Maps</RNText>
+                                </TouchableOpacity>
+                              </View>
+                            )}
+                          </View>
+                        ) : (
+                          <View style={styles.noFilesContainer}>
+                            <RNText className="text-gray-500">Location not available.</RNText>
+                          </View>
+                        )}
+                      </View>
+
         </View>
       </ScrollView>
 
@@ -495,5 +534,26 @@ const styles = {
   loadingLogo: {
     width: 100,
     height: 100,
+  },
+};
+
+const mapStyles = {
+  cardContainer: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 3,
+    borderColor: '#6b7280',
+    backgroundColor: '#fff',
+    width: '100%',
+    height: 180,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  image: {
+    width: '100%',
+    height: '100%',
   },
 };
