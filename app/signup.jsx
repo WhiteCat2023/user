@@ -32,6 +32,7 @@ export default function SignUp() {
     password: "",
     confirmPassword: "",
     role: Role.USER,
+    phone: "",
   });
 
   const router = useRouter();
@@ -55,6 +56,30 @@ export default function SignUp() {
     }));
   };
 
+  // Normalize Philippine phone numbers into E.164 (+63XXXXXXXXXX)
+  const normalizePhilippinePhone = (input) => {
+    if (!input) return null;
+    // Remove spaces, dashes, parentheses
+    const digits = input.replace(/[^0-9+]/g, "");
+
+    // Strip leading + for checks
+    const raw = digits.startsWith("+") ? digits.slice(1) : digits;
+
+    // If already starts with country code 63 + 10 digits
+    if (/^63\d{10}$/.test(raw)) return `+${raw}`;
+
+    // If starts with 0 and mobile 09XXXXXXXXX or 9XXXXXXXXX
+    if (/^0?9\d{9}$/.test(raw)) {
+      const withoutLeading0 = raw.replace(/^0/, "");
+      return `+63${withoutLeading0}`;
+    }
+
+    // If already +63XXXXXXXXXX
+    if (/^\+63\d{10}$/.test(digits)) return digits;
+
+    return null;
+  };
+
   const handleSubmit = async () => {
     setShowErrors(true);
     
@@ -62,6 +87,7 @@ export default function SignUp() {
       !credentials.firstName ||
       !credentials.lastName ||
       !credentials.email ||
+      !credentials.phone ||
       credentials.password !== credentials.confirmPassword
     ) {
       Alert.alert("Please fix the errors before submitting.");
@@ -70,6 +96,13 @@ export default function SignUp() {
 
     if (!isValidEmail(credentials.email)) {
       Alert.alert("Invalid email format");
+      return;
+    }
+
+    // Normalize and validate Philippine phone number
+    const normalizedPhone = normalizePhilippinePhone(credentials.phone);
+    if (!normalizedPhone) {
+      Alert.alert("Invalid phone", "Please enter a valid Philippine phone number (e.g. 09XXXXXXXXX or +639XXXXXXXXX).");
       return;
     }
 
@@ -99,7 +132,7 @@ export default function SignUp() {
 
     try {
       // send credentials plus location (location may be null if not available)
-      const payload = { ...credentials, location: locationArray };
+  const payload = { ...credentials, location: locationArray, phone: normalizedPhone };
       const userCredential = await signUp(payload);
 
       if (userCredential?.data?.user) {
@@ -126,6 +159,7 @@ export default function SignUp() {
           password: "",
           confirmPassword: "",
           role: Role.USER,
+          phone: "",
         });
         setShowErrors(false);
 
@@ -194,6 +228,17 @@ export default function SignUp() {
               leftIconName="user"
               showErrors={showErrors}
               editable={!loading}
+              style={{ borderColor: "green", borderWidth: 1, borderRadius: 8 }}
+            />
+
+            <Input
+              placeholder="Phone Number"
+              value={credentials.phone}
+              onChangeText={(t) => handleChange("phone", t)}
+              leftIconName="phone"
+              showErrors={showErrors}
+              editable={!loading}
+              keyboardType="phone-pad"
               style={{ borderColor: "green", borderWidth: 1, borderRadius: 8 }}
             />
 

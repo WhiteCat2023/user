@@ -39,6 +39,7 @@ export default function Profile() {
   const [isUploadingProfilePic, setIsUploadingProfilePic] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -63,6 +64,8 @@ const [showDeleteSuccessModal, setShowDeleteSuccessModal] = useState(false);
     if (userDoc) {
       setFirstName(userDoc.firstName || "");
       setLastName(userDoc.lastName || "");
+      // userDoc may store phone under `phone` or `phoneNumber` depending on signup flow
+      setPhoneNumber(userDoc.phone || userDoc.phoneNumber || "");
     }
   }, [userDoc]);
 
@@ -138,6 +141,7 @@ const handleDeleteAccount = async () => {
       await updateDoc(userRef, {
         firstName: firstName,
         lastName: lastName,
+        phone: phoneNumber,
       });
       
     } catch (error) {
@@ -292,7 +296,7 @@ const handleDeleteAccount = async () => {
             </ImageBackground>
             <View className="flex-row items-center -mt-16 px-4">
               <Image
-                source={{ uri: user?.photoURL || "https://i.pravatar.cc/100" }}
+                source={{ uri: user?.photoURL || "https://www.shutterstock.com/image-vector/blank-avatar-photo-place-holder-600nw-1095249842.jpg" }}
                 className="-ml-2 w-28 h-28 rounded-full border-4 border-white bg-gray-200"
               />
               <View className="ml-2">
@@ -372,13 +376,14 @@ const handleDeleteAccount = async () => {
               </View>
               <View className="mt-4">
                 <Text className="text-sm text-gray-500">Mobile Number</Text>
-                <TextInput
-                  value={userDoc?.phoneNumber || "+09000000000"}
-                  editable={isEditing}
-                  className={`border rounded-lg p-2 mt-1 ${
-                    isEditing ? "border-gray-300" : "border-transparent bg-gray-100"
-                  }`}
-                />
+                  <TextInput
+                    value={phoneNumber || "+09000000000"}
+                    editable={isEditing}
+                    onChangeText={setPhoneNumber}
+                    className={`border rounded-lg p-2 mt-1 ${
+                      isEditing ? "border-gray-300" : "border-transparent bg-gray-100"
+                    }`}
+                  />
               </View>
               <Text className="text-xs text-gray-400 mt-2">
                 You may need to log out and log back in to see changes.

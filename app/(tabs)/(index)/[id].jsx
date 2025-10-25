@@ -545,10 +545,21 @@ const [commentFilter, setCommentFilter] = useState("Newest") // "Newest" | "Olde
                   setReplyText(prev => ({ ...prev, [item.id]: text }))
                 }
                 className="border border-gray-300 rounded-md p-2 mb-2"
+                returnKeyType="send"
+                blurOnSubmit={true}
+                multiline
+                textAlignVertical="top"
+                onSubmitEditing={() => {
+                  // If item is a nested reply (has parentId) we add a nested reply under this item
+                  // otherwise, add a reply to the top-level comment
+                  if (item?.parentId) {
+                    addNestedReply(item.id)
+                  } else {
+                    addReply(item.id)
+                  }
+                }}
               />
-              <Button className="bg-green-600 px-3" onPress={() => addReply(item.id)}>
-                <Text className="text-white">Reply</Text>
-              </Button>
+              
             </Box>
           )}
 
@@ -640,7 +651,7 @@ if (commentFilter === "Newest") {
               </Box>
 
               <Box className="flex-row items-center mb-2 text-black font-[DMBold]">
-                <Image source={{ uri: forum.authorPhoto }} style={{ width: 35, height: 35, borderRadius: 18, marginRight: 8 }} />
+                <Image source={{ uri: forum.authorPhoto || "https://www.shutterstock.com/image-vector/blank-avatar-photo-place-holder-600nw-1095249842.jpg" }} style={{ width: 35, height: 35, borderRadius: 18, marginRight: 8 }} />
                 <Text bold>{forum.authorName}</Text>
                 <Text className="mx-2 text-gray-400">•</Text>
                 <Text className="text-gray-500 font-[DM] text-xs">

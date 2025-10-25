@@ -15,7 +15,7 @@ import {
   View,
 } from "react-native";
 
-export default function AIChatbot() {
+export default function AIbot() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -183,7 +183,7 @@ const { user } = useAuth(); // Add this at the top of the component
     {/* User profile pic at the right */}
     {msg.sender === "user" && (
       <Image
-        source={{ uri: user?.photoURL || "https://i.pravatar.cc/100" }}
+        source={{ uri: user?.photoURL || "https://www.shutterstock.com/image-vector/blank-avatar-photo-place-holder-600nw-1095249842.jpg" }}
         style={styles.profilePic}
       />
     )}
